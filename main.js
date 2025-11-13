@@ -34,9 +34,23 @@ function updateTransform() {
 }
 
 function zoom(factor) {
-    scale *= factor;
-    // Clamp zoom level
-    scale = Math.max(0.1, Math.min(scale, 10));
+    const playersContainer = document.getElementById('players');
+    if (!playersContainer) return;
+    
+    // Logic to zoom towards the center of the viewport
+    const viewport = document.getElementById('grid-viewport');
+    const viewportRect = viewport.getBoundingClientRect();
+    const viewportCenterX = viewportRect.width / 2;
+    const viewportCenterY = viewportRect.height / 2;
+
+    const newScale = Math.max(0.1, Math.min(scale * factor, 10));
+
+    // Pan to keep the center point the same
+    panX = viewportCenterX - (viewportCenterX - panX) * (newScale / scale);
+    panY = viewportCenterY - (viewportCenterY - panY) * (newScale / scale);
+
+    scale = newScale;
+
     updateTransform();
 }
 
@@ -45,6 +59,11 @@ function resetZoom() {
     panX = 0;
     panY = 0;
     updateTransform();
+    const viewport = document.getElementById('grid-viewport');
+    if (viewport) {
+        viewport.scrollLeft = 0;
+        viewport.scrollTop = 0;
+    }
 }
 
 function setupGridInteraction() {
@@ -54,32 +73,40 @@ function setupGridInteraction() {
     let isPanning = false;
     let startPanX = 0;
     let startPanY = 0;
+    let startScrollX = 0;
+    let startScrollY = 0;
 
     viewport.addEventListener('mousedown', (e) => {
         if (e.button !== 0) return; // Only pan on left-click
-        e.preventDefault();
         isPanning = true;
-        startPanX = e.clientX - panX;
-        startPanY = e.clientY - panY;
+        startPanX = e.clientX;
+        startPanY = e.clientY;
+        startScrollX = viewport.scrollLeft;
+        startScrollY = viewport.scrollTop;
         viewport.style.cursor = 'grabbing';
+        viewport.style.userSelect = 'none';
     });
 
     viewport.addEventListener('mousemove', (e) => {
         if (!isPanning) return;
         e.preventDefault();
-        panX = e.clientX - startPanX;
-        panY = e.clientY - startPanY;
-        updateTransform();
+        const dx = e.clientX - startPanX;
+        const dy = e.clientY - startPanY;
+        viewport.scrollLeft = startScrollX - dx;
+        viewport.scrollTop = startScrollY - dy;
     });
 
     const stopPanning = () => {
         if (!isPanning) return;
         isPanning = false;
         viewport.style.cursor = 'grab';
+        viewport.style.removeProperty('user-select');
     };
     
     viewport.addEventListener('mouseup', stopPanning);
     viewport.addEventListener('mouseleave', stopPanning);
+    
+    // Keep wheel zoom but prevent default scroll page behavior
     viewport.addEventListener('wheel', (e) => {
         e.preventDefault();
         const zoomFactor = e.deltaY < 0 ? 1.1 : 1 / 1.1;
