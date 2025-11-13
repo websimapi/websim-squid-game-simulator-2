@@ -1,5 +1,11 @@
 let persistentGroupColors = {};
 
+// --- NEW: Grid Viewport State ---
+let scale = 1;
+let panX = 0;
+let panY = 0;
+// --- END NEW ---
+
 function toggleAdvancedSettings() {
     const content = document.getElementById('advanced-settings-content');
     const toggle = document.getElementById('advanced-settings-toggle');
@@ -18,6 +24,69 @@ let gameState = {};
 let gameHistory = [];
 let eliminatedOrder = [];
 let isGroupView = false;
+
+// --- NEW: Grid Interaction Functions ---
+function updateTransform() {
+    const playersContainer = document.getElementById('players');
+    if (playersContainer) {
+        playersContainer.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
+    }
+}
+
+function zoom(factor) {
+    scale *= factor;
+    // Clamp zoom level
+    scale = Math.max(0.1, Math.min(scale, 10));
+    updateTransform();
+}
+
+function resetZoom() {
+    scale = 1;
+    panX = 0;
+    panY = 0;
+    updateTransform();
+}
+
+function setupGridInteraction() {
+    const viewport = document.getElementById('grid-viewport');
+    if (!viewport) return;
+
+    let isPanning = false;
+    let startPanX = 0;
+    let startPanY = 0;
+
+    viewport.addEventListener('mousedown', (e) => {
+        if (e.button !== 0) return; // Only pan on left-click
+        e.preventDefault();
+        isPanning = true;
+        startPanX = e.clientX - panX;
+        startPanY = e.clientY - panY;
+        viewport.style.cursor = 'grabbing';
+    });
+
+    viewport.addEventListener('mousemove', (e) => {
+        if (!isPanning) return;
+        e.preventDefault();
+        panX = e.clientX - startPanX;
+        panY = e.clientY - startPanY;
+        updateTransform();
+    });
+
+    const stopPanning = () => {
+        if (!isPanning) return;
+        isPanning = false;
+        viewport.style.cursor = 'grab';
+    };
+    
+    viewport.addEventListener('mouseup', stopPanning);
+    viewport.addEventListener('mouseleave', stopPanning);
+    viewport.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const zoomFactor = e.deltaY < 0 ? 1.1 : 1 / 1.1;
+        zoom(zoomFactor);
+    }, { passive: false });
+}
+// --- END NEW ---
 
 function getTraitValue(trait) {
     const min = parseInt(document.getElementById(`adv${trait}Min`).value) || 1;
@@ -71,13 +140,32 @@ function createPlayer(id, isAdvanced, options) {
 
 function updateAllPlayerDivs() {
     const playersContainer = document.getElementById('players');
-    playersContainer.innerHTML = ''; 
+    const viewport = document.getElementById('grid-viewport');
+    if (!playersContainer || !viewport) return;
 
-    players.forEach(p => {
+    playersContainer.innerHTML = '';
+
+    // --- NEW: Grid Layout Logic ---
+    const playerSize = 42; // Includes margin
+    const playersPerRow = Math.floor(viewport.clientWidth / playerSize);
+    const numRows = Math.ceil(players.length / playersPerRow);
+
+    playersContainer.style.width = `${playersPerRow * playerSize}px`;
+    playersContainer.style.height = `${numRows * playerSize}px`;
+    // --- END NEW ---
+
+    players.forEach((p, index) => {
         let playerDiv = document.createElement('div');
         playerDiv.className = 'player';
         playerDiv.id = `player-${p.id}`;
         playerDiv.dataset.id = p.id;
+
+        // --- NEW: Positioning ---
+        const row = Math.floor(index / playersPerRow);
+        const col = index % playersPerRow;
+        playerDiv.style.left = `${col * playerSize}px`;
+        playerDiv.style.top = `${row * playerSize}px`;
+        // --- END NEW ---
 
         let playerNumberSpan = document.createElement('span');
         playerNumberSpan.className = 'player-number';
@@ -114,6 +202,10 @@ function startGame(isAdvanced) {
     isGroupView = false;
     persistentGroupColors = {};
     
+    // --- NEW: Reset zoom on new game ---
+    resetZoom();
+    // --- END NEW ---
+
     gameState = {
         round: 0,
         playersRemaining: numPlayers,
@@ -144,3 +236,9 @@ function startGame(isAdvanced) {
     updatePlayersRemaining();
     document.getElementById('history-slider-container').style.display = 'block';
 }
+
+// --- NEW: Initialize grid controls on load ---
+document.addEventListener('DOMContentLoaded', () => {
+    setupGridInteraction();
+});
+// --- END NEW ---

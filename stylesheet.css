@@ -1,4 +1,3 @@
-
 body {
     font-family: Arial, sans-serif;
     text-align: center;
@@ -51,7 +50,7 @@ h1 {
     position: relative;
     width: 100%;
     height: 70vh;
-    overflow: auto; /* IMPORTANT for scrolling */
+    overflow: hidden; /* IMPORTANT for custom panning */
     border: 2px solid #555;
     background-color: black; /* Changed to black */
     cursor: grab;
