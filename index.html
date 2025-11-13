@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Squid Game Simulator</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> 
+    <link rel="stylesheet" href="stylesheet.css">
+    <script src="main.js"></script> 
+    
+</head>
+
+
+
+<body>
+  <div id="archive-view-banner">
+      You are viewing an archived game. <button onclick="returnToLiveGame()">Return to Live Session</button>
+  </div>
+  <div id="eliminationAnnouncement"></div>
+  <div id="achievement-toast"></div>
+  
+  <div id="instructions-panel">
+      <div id="instructions-toggle" onclick="toggleInstructions()">Instructions & Guide [Click to Open]</div>
+      <div id="instructions-content">
+          <h4>Welcome to the Squid Game Simulator!</h4>
+           <p><strong>Save/Load Game:</strong> Use the "Save Game State" button below the title to download your entire session. You can use "Load Game State" to upload that file and continue exactly where you left off, including all winner history, achievements, and custom games.</p>
+          <p><strong>Starting a Game:</strong> Enter the number of players (default 456) and click "Begin new game". Use the "Advanced Settings" to customize the starting roster.</p>
+          <p><strong>Playing a Round:</strong> Use the "Game Presets" box to choose a game, or use the "Custom Round" controls.</p>
+          <p><strong>Events:</strong> In the "Games & Statistics" tab, use the "Events" box to trigger special, non-round occurrences. These can only be used once per game.</p>
+          <p><strong>Animated Rounds:</strong> Click "Arm Animation Mode". The button will turn green. Then click any game preset to watch the eliminations happen live. The mode disarms after one use.</p>
+          <p><strong>ARCHIVED GAMES:</strong> In the Winner History list, click "View Game" to load up a past game. You can browse all the players, stats, and round history from that game. Click the banner at the top to return to your live session.</p>
+          <p><strong>Player Dossier:</strong> Click on any player's diamond to open their detailed file.</p>
+          <p><strong>History Slider:</strong> After a game begins, a slider will appear above the player grid. Use it to view the state of the game (alliances, injuries, etc.) at the end of any previous round.</p>
+          <p><strong>VIP Betting:</strong> In the 'VIP' tab, you can bet on multiple players to win. Your balance persists between games. This is only available in 'vanilla' games where no players have been manually modified.</p>
+          <p><strong>Achievements:</strong> Unlock achievements by completing certain milestones! Check your progress in the 'Achievements' tab.</p>
+          <p><strong>Alliances & Enemies:</strong> Use the respective boxes to manually form or remove alliances and rivalries.</p>
+          <p><strong>Superpowers:</strong> Give a player protection, which act as extra lives against elimination.</p>
+          <p><strong>Personalities & Traits:</strong> Customize a player by giving them a name, backstory, and unique stats. This will make them stand out visually and can affect game outcomes.</p>
+          <p><strong>Game Creator:</strong> Design your own game! Name it, define the elimination reason, choose which player traits matter for survival, and set how many players (by number or percentage) get eliminated.</p>
+          <p><strong>Season 2 Voting:</strong> Click the "2" by the title to enable voting rounds where players can decide to end the game.</p>
+          <p><strong>Group View:</strong> The "Show Groups" button highlights alliances with colors, making it easy to see who is working together.</p>
+          <p><strong>Injuries:</strong> Players have a small chance of getting injured between games, especially physical ones. Injuries (red glow) temporarily lower Strength and Agility, and increase Cowardice. You can also manually apply them in the "Other" tab.</p>
+        
+      </div>
+  </div>
+
+      
+<div class="title-container">
+    <h1>Squid Game Simulator</h1>
+  </div>
+
+  
+
+  <!-- NEW SAVE/LOAD CONTROLS -->
+  <div class="save-load-controls">
+      <button onclick="saveGame()">Save Game State</button>
+      <label for="loadGameInput" class="button-like-label">Load Game State</label>
+      <input type="file" id="loadGameInput" onchange="loadGame(event)" accept=".json" style="display: none;">
+  </div>
+  <!-- END NEW SAVE/LOAD CONTROLS -->
+  
+      
+<div class="controls">
+         <label>Enter number of starting players: </label>
+       <input type="number" id="numPlayers" min="2" value="456">
+        <button onclick="startGame(false)">Begin Vanilla Game</button>
+        <br><br>
+        <button onclick="toggleEliminatedVisibility()" id="toggleEliminatedBtn">Hide toggleGroupView()Eliminated/Out</button>
+        <button onclick="toggleGroupView()" id="toggleGroupBtn">Show Groups</button>
+  </div>
+
+  
+
+    <!-- NEW: ADVANCED SETTINGS PANEL -->
+    <div id="advanced-settings-panel">
+        <div id="advanced-settings-toggle" onclick="toggleAdvancedSettings()">Advanced New Game Settings [Click to Open]</div>
+        <div id="advanced-settings-content">
+            <p class="advanced-note">Using any of these settings will disable VIP Betting for this game. Leave fields blank for random generation.</p>
+            <h4>Demographics</h4>
+            <div class="setting-group">
+                <div class="setting">
+                    <label for="advCountry">Country (for all):</label>
+                    <input type="text" id="advCountry" placeholder="e.g., South Korea">
+                </div>
+                   
+   <div class="setting">
+                    <label for="advFemaleCount">Number of Females:</label>
+                    <input type="number" id="advFemaleCount" min="0" placeholder="e.g., 200">
+                </div>
+                <div class="setting">
+                    <label for="advMaleCount">Number of Males:</label>
+                    <input type="number" id="advMaleCount" min="0" placeholder="e.g., 256">
+                </div>
+ 
+
+
+  
+                <div class="setting">
+                    <label>Age Range:</label>
+                    <div class="range-inputs">
+                        <input type="number" id="advAgeMin" min="18" placeholder="Min">
+                        <input type="number" id="advAgeMax" min="18" placeholder="Max">
+                    </div>
+                </div>
+            </div>
+            <h4>Base Traits (Range 1-15)</h4>
+            <div class="setting-group">
+                <div class="setting">
+                    <label>Strength:</label>
+                    <div class="range-inputs">
+                        <input type="number" id="advStrMin" min="1" max="15" placeholder="Min">
+                        <input type="number" id="advStrMax" min="1" max="15" placeholder="Max">
+                    </div>
+                </div>
+                <div class="setting">
+                    <label>Agility:</label>
+                    <div class="range-inputs">
+                        <input type="number" id="advAgiMin" min="1" max="15" placeholder="Min">
+                        <input type="number" id="advAgiMax" min="1" max="15" placeholder="Max">
+                    </div>
+                </div>
+                <div class="setting">
+                    <label>Intelligence:</label>
+                    <div class="range-inputs">
+                        <input type="number" id="advIntMin" min="1" max="15" placeholder="Min">
+                        <input type="number" id="advIntMax" min="1" max="15" placeholder="Max">
+                    </div>
+                </div>
+                <div class="setting">
+                    <label>Charisma:</label>
+                    <div class="range-inputs">
+                        <input type="number" id="advChaMin" min="1" max="15" placeholder="Min">
+                        <input type="number" id="advChaMax" min="1" max="15" placeholder="Max">
+                    </div>
+                </div>
+                 <div class="setting">
+                    <label>Luck:</label>
+                    <div class="range-inputs">
+                        <input type="number" id="advLckMin" min="1" max="15" placeholder="Min">
+                        <input type="number" id="advLckMax" min="1" max="15" placeholder="Max">
+                    </div>
+                </div>
+                 <div class="setting">
+                    <label>Cowardice:</label>
+                    <div class="range-inputs">
+                        <input type="number" id="advCowMin" min="0" max="15" placeholder="Min">
+                        <input type="number" id="advCowMax" min="0" max="15" placeholder="Max">
+                    </div>
+                </div>
+                     
+<div class="setting">
+                    <label>Greed:</label>
+                    <div class="range-inputs">
+                        <input type="number" id="advGrdMin" min="0" max="15" placeholder="Min">
+                        <input type="number" id="advGrdMax" min="0" max="15" placeholder="Max">
+                    </div>
+                </div>
+            </div>
+            <button onclick="startGame(true)" style="width: 100%; padding: 10px; margin-top: 15px; font-weight: bold; background-color: #d90429; color: white;">Begin Advanced Game</button>
+        </div>
+    </div>
+
+  
+
+
+    <div id="grid-viewport-container">
+        <div id="history-slider-container">
+            <label for="historySlider">Game History:</label>
+            <input type="range" id="historySlider" min="0" max="0" value="0" oninput="handleHistorySlide(this.value)">
+            <span id="historySliderLabel">Live</span>
+            <button onclick="returnToLive()">Return to Live</button>
+        </div>
+        <div id="grid-controls">
+            <button onclick="zoom(1.2)">Zoom In (+)</button>
+            <button onclick="zoom(1/1.2)">Zoom Out (-)</button>
+            <button onclick="resetZoom()">Reset Zoom</button>
+        </div>
+        <div id="grid-viewport">
+            <div id="players"></div>
+        </div>
+    </div>
+
+  <div class="controls">
+          <label>Number of Eliminated Players for the next round: </label>
+           <input type="number" id="numEliminated" min="1" value="1">
+          <br><br>
+         <label>Reason for elimination: </label>
+           <input type="text" id="roundDescription" value="failed a generic challenge">
+          <br><br>
+      <button onclick="playRound()">Begin Custom Round</button>
+      <button onclick="toggleAnimationMode()" id="animationModeBtn">Arm Animation Mode</button>
+      <button onclick="pausePlayAnimation()" id="pausePlayButton" disabled>Pause Animation</button>
+    </div>
+
+      <h2>Players Remaining: <span id="playersRemaining">0</span></h2>
+
+
+<div class="controls">
+      
+       <button onclick="toggleRosterView()" id="toggleRosterBtn">Compact Roster (Delete Out)</button>
+</div>
+
+
+    <div class="control-panel-wrapper">
+        <div id="controlPanelToggle" onclick="toggleControlPanel()">Game Control & Customization &#9660;</div>
+        <div id="controlPanelContainer" style="display: none;">
+                
+<div class="tab-buttons">
+                <button class="tab-link active" onclick="openTab(event, 'tabGames')">Games & Statistics</button>
+                <button class="tab-link" onclick="openTab(event, 'tabPersonalities')">Personalities</button>
+                <button class="tab-link" onclick="openTab(event, 'tabRelationships')">Alliances & Enemies</button>
+                <button class="tab-link" id="vip-tab-button" onclick="openTab(event, 'tabVip')">VIP</button>
+                <button class="tab-link" id="achievements-tab-button" onclick="openTab(event, 'tabAchievements')">Achievements</button>
+                <button class="tab-link" id="voting-tab-button" onclick="openTab(event, 'tabVoting')">Voting</button>
+                <button class="tab-link" onclick="openTab(event, 'tabOther')">Other</button>
+            </div>
+
+  
+
+            <div id="tabGames" class="tab-content" style="display: block;">
+                <div class="control-panel">
+                    <div class="statistics-box control-box">
+                        <h3>Game Statistics</h3>
+                        <div id="statisticsContent"></div>
+                        <h4 style="margin-top:15px;">Elimination Order</h4>
+                        <div id="eliminationOrderContainer">
+                            <div id="eliminationOrderList"></div>
+                        </div>
+                    </div>
+                    <div class="game-presets-box control-box">
+                        <h3>Game Presets</h3>
+                        <div class="game-presets-controls">
+                            <button onclick="playPresetGame('Red Light Green Light', 30, 65, 'moved during Red Light.')">RLGL (30-65%)</button>
+                            <button onclick="handleDalgona()">Dalgona</button>
+                            <button onclick="handleTugOfWar()">Tug of War (~50%)</button>
+                            <button onclick="handleDodgeball()">Dodgeball (~50%)</button>
+                            <button onclick="handleLightsOut()">Lights Out (Deadly)</button>
+                            <button onclick="handleMarbles()">Marbles (~50%)</button>
+                            <button onclick="handleGlassBridge()">Glass Bridge</button>
+                            <button onclick="handleSquidGame()">Squid Game</button>
+                            <button onclick="handleSkySquidGame()">Sky Squid Game (3-9)</button>
+                            <button onclick="handlePentathlon()">Pentathlon (Pass ~60%)</button>
+                            <button onclick="handleMingle()">Mingle (40%)</button>
+                            <button onclick="playPresetGame('Rebellion', 30, 30, 'was eliminated in the Rebellion.')">Rebellion (30%)</button>
+                            <button onclick="handleHideAndSeek()">Hide & Seek (50-60%)</button>
+                            <button onclick="playPresetGame('Jump Rope', 70, 80, 'failed the jump rope.')">Jump Rope (70-80%)</button>
+                            <button onclick="handleHotPotato()">Hot Potato (75%)</button>
+                            <button onclick="handleHopscotch()">Hopscotch (Luck)</button>
+                            <button onclick="playPresetGame('Four Square', 25, 25, 'was out in Four Square.')">Four Square (25%)</button>
+                            <button onclick="playPresetGame('Simon Says', 30, 60, 'failed Simon Says.')">Simon Says (30-60%)</button>
+                            <button onclick="playPresetGame('Tag', 50, 50, 'was tagged out.')">Tag (50%)</button>
+                            <button onclick="playPresetGame('Musical Chairs', 80, 80, 'was left without a chair.')">Musical Chairs (80%)</button>
+                            <button onclick="playPresetGame('Human Chess', 90, 90, 'was checkmated.')">Human Chess (90%)</button>
+                            <button onclick="playPresetGame('Confirm Finalists', 0, 0, 'confirmed as a finalist.')">Confirm Finalists</button>
+                            <button onclick="playPresetGame('Get Finalist', -1, -1, 'was eliminated to determine finalists.')">Get Finalist (To 3)</button>
+                            <button onclick="playPresetGame('Voted To Leave', 7, 10, 'left the games and did not return.')">Voted To Leave (7-10%)</button>
+                            <button onclick="playPresetGame('Confirm Winners', 0, 0, 'agreed to split the prize.')">Confirm Winners</button>
+                        </div>
+                    </div>
+                     <div class="game-creator-box control-box">
+                        <h3>Game Creator</h3>
+                        <label>Game Name:</label><input type="text" id="customGameName"><br>
+                        <label>Elimination Reason:</label><input type="text" id="customGameReason"><br>
+                        <h4>Used Traits (for survival):</h4>
+                        <div class="trait-checkboxes">
+                            <label><input type="checkbox" name="customTrait" value="strength"> Str</label>
+                            <label><input type="checkbox" name="customTrait" value="agility"> Agi</label>
+                            <label><input type="checkbox" name="customTrait" value="intelligence"> Int</label>
+                            <label><input type="checkbox" name="customTrait" value="charisma"> Cha</label>
+                            <label><input type="checkbox" name="customTrait" value="luck"> Lck</label>
+                        </div>
+                        <h4>Elimination Rule:</h4>
+                        <label><input type="radio" name="elimType" value="percent" checked> Percentage</label>
+                        <label><input type="radio" name="elimType" value="number"> Number</label><br>
+                        <input type="number" id="customGameValue" value="10"><br><br>
+                        <button onclick="createCustomGame()">Create Game</button>
+                        <hr>
+                        <h4>Custom Games:</h4>
+                        <div id="customGamesList"></div>
+                    </div>
+                    <div class="events-box control-box">
+                        <h3>Events (Once per Game)</h3>
+                        <div id="events-controls">
+                            <button id="eventBtn-bathroomFight" onclick="handleBathroomFight()">Bathroom Fight</button>
+                            <button id="eventBtn-xVsO" onclick="handleXvsO()">X vs O Brawl</button>
+                            <button id="eventBtn-escapeAttempt" onclick="handleEscapeAttempt()">Attempt Escape</button>
+                            <button id="eventBtn-giveHint" onclick="handleGiveHint()">Give Player Hint</button>
+                            <button id="eventBtn-selfElimination" onclick="handleRandomSelfElimination()">Random Self-Elimination</button>
+                            <hr>
+                            <button id="eventBtn-random" onclick="handleRandomEvent()">Trigger Random Event</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tabPersonalities" class="tab-content">
+                <div class="control-panel">
+                     <div class="personality-box control-box">
+                        <h3>Personality Box</h3>
+                        <div class="personality-controls">
+                            <label>Player ID: </label><input type="number" id="personalityPlayerId" min="1"><br><br>
+                            <label>First Name: </label><input type="text" id="playerFirstName"><br><br>
+                            <label>Last Name: </label><input type="text" id="playerLastName"><br><br>
+                            <label>Nickname: </label><input type="text" id="playerNickname"><br><br>
+                            <label>Age: </label><input type="number" id="playerAge" min="18"><br><br>
+                            <label>Gender: </label><select id="playerGender"><option value=""></option><option value="Male">Male</option><option value="Female">Female</option></select><br><br>
+                            <label>Country: </label><input type="text" id="playerCountry"><br><br>
+                            <label>Occupation: </label><input type="text" id="playerOccupation"><br><br>
+                            <label>Debt ($): </label><input type="number" id="playerDebt" min="0"><br><br>
+                            <button onclick="applyPersonality()">Apply Personality</button>
+                        </div>
+                        <h4>Players with Personalities</h4>
+                        <ul id="personalityPlayers"></ul>
+                    </div>
+                    <div class="easter-egg-box control-box">
+                        <h3>Easter Egg Characters</h3>
+                        <div id="easterEggCharacterList">
+                            <!-- JS will populate this -->
+                        </div>
+                    </div>
+                    <!-- NEW Previous Winner Box -->
+                     <div class="control-box" style="background-color: #d4edda;">
+                        <h3>Add Previous Winner</h3>
+                        <label for="previousWinnerSelect">Select Winner:</label>
+                        <select id="previousWinnerSelect" onchange="updateWinnerDefaultId()"></select>
+                        <label for="newWinnerPlayerId">Place at Player ID:</label>
+                        <input type="number" id="newWinnerPlayerId" min="1">
+                        <br><br>
+                        <button onclick="addPreviousWinnerToGame()" style="width: 100%;">Add to Game</button>
+                     </div>
+                    <!-- NEW Favorite Players Box -->
+                    <div class="control-box" style="background-color: #fffacd;">
+                        <h3>⭐ Favorited Players</h3>
+                        <ul id="favoritedPlayersList"></ul>
+                    </div>
+                     <div class="traits-box control-box">
+                        <h3>Hidden Traits</h3>
+                        <div>
+                            <label>Player ID: </label><input type="number" id="traitPlayerId" onkeyup="loadPlayerTraits(this.value)"><br><br>
+                            <label>Strength: </label><input type="number" id="traitStrength" min="1" max="15"><br>
+                            <label>Agility: </label><input type="number" id="traitAgility" min="1" max="15"><br>
+                            <label>Intelligence: </label><input type="number" id="traitIntelligence" min="1" max="15"><br>
+                            <label>Charisma: </label><input type="number" id="traitCharisma" min="1" max="15"><br>
+                            <label>Luck: </label><input type="number" id="traitLuck" min="1" max="15"><br>
+                            <label>Cowardice: </label><input type="number" id="traitCowardice" min="0" max="15"><br>
+                            <label>Greed: </label><input type="number" id="traitGreed" min="0" max="15"><br><br>
+                            <button onclick="applyTraits()">Apply Traits</button>
+                            <button onclick="randomizeTraitsForSelectedPlayer()">Randomize</button>
+                        </div>
+                    </div>
+                    <div class="superpower-box control-box">
+                        <h3>Superpower Box</h3>
+                        <div class="superpower-controls">
+                            <label for="superpowerPlayerId">Player ID: </label><input type="number" id="superpowerPlayerId" min="1"><br><br>
+                            <label for="protectionLevel">Protection: </label><input type="number" id="protectionLevel" min="1" value="1"><br><br>
+                            <button onclick="applySuperpower()">Apply Superpower</button>
+                        </div>
+                        <h4>Superpowered Players</h4>
+                        <ul id="superpoweredPlayers"></ul>
+                         <p class="recommended-power-note">
+                            <strong>Recommended:</strong> Prot 1 for background chars, Prot 2 for side chars, Prot 3 for main chars. But it's up to you!
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+                 
+<div id="tabRelationships" class="tab-content">
+                <div class="control-panel">
+                    <div class="alliance-box control-box">
+                        <h3>Alliances</h3>
+                        <div>
+                            <label>Player 1 ID: </label><input type="number" id="allianceP1" min="1"><br>
+                            <label>Player 2 ID: </label><input type="number" id="allianceP2" min="1"><br><br>
+                            <button onclick="createAlliance()">Create Alliance</button>
+                            <button onclick="removeAlliance()">Remove Alliance</button>
+                        </div>
+                    </div>
+                    <div class="enemy-box control-box">
+                        <h3>Enemies</h3>
+                        <div>
+                            <label>Player 1 ID: </label><input type="number" id="enemyP1" min="1"><br>
+                            <label>Player 2 ID: </label><input type="number" id="enemyP2" min="1"><br><br>
+                            <button onclick="createEnemy()">Create Enemy</button>
+                            <button onclick="removeEnemy()">Remove Enemies</button>
+                        </div>
+                    </div>
+
+                    <!-- NEW RELATIONSHIP BOX -->
+                    <div class="control-box" style="background-color: #d1e7dd;">
+                        <h3>Manual Relationships</h3>
+                        <div>
+                            <label>Player 1 ID:</label><input type="number" id="relationP1" min="1">
+                            <label>Player 2 ID:</label><input type="number" id="relationP2" min="1">
+                            <label>Relationship (P1's relation to P2):</label>
+                            <select id="relationType">
+                                <option value="Mother">Mother</option>
+                                <option value="Father">Father</option>
+                                <option value="Daughter">Daughter</option>
+                                <option value="Son">Son</option>
+                                <option value="Wife">Wife</option>
+                                <option value="Husband">Husband</option>
+                                <option value="Friend">Friend</option>
+                            </select>
+                            <br><br>
+                            <button onclick="createRelation()" style="width: 100%;">Create Relation</button>
+                            <hr>
+                            <label>Remove From Player ID:</label>
+                            <input type="number" id="removeRelationP1" min="1">
+                            <button onclick="removeRelation()" style="width: 100%; margin-top: 5px;">Remove Relation</button>
+                        </div>
+                    </div>
+                    
+                    
+                        </div>
+                    </div>
+
+                </div>
+             </div>
+
+  
+
+            <div id="tabVip" class="tab-content">
+                 <div class="control-panel">
+                    <div class="vip-box control-box">
+                        <h3>Bet on a Player</h3>
+                        <p><strong>Betting Balance:</strong> <span id="bettingBalanceDisplay">$1,000,000</span></p>
+                        <div class="betting-interface">
+                            <div id="betting-main-content">
+                                <!-- This content is managed by JS -->
+                            </div>
+                            <div id="betting-disabled-msg" style="display: none;">
+                                Betting is disabled for this game because a player was modified. Start a new game for a 'vanilla' experience to enable betting.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tabAchievements" class="tab-content">
+                <div class="control-panel">
+                    <div class="achievements-box control-box">
+                        <h3>Achievements</h3>
+                        <div id="achievements-list"></div>
+                    </div>
+                </div>
+            </div>
+
+                
+<div id="tabVoting" class="tab-content">
+                <div class="control-panel">
+                     <div class="voting-box control-box" id="votingBox">
+                        <h3>Voting Controls</h3>
+                        <div class="voting-controls">
+                            <button onclick="toggleSeason2Mode()" id="season2ToggleBtnInTab">Enable Voting Mode</button>
+                            <hr>
+                            <h4>Actions (when enabled):</h4>
+                            <button onclick="startVotingRound()">Start Voting Round</button>
+                            <button onclick="toggleVoteColors()" id="toggleVoteColorsBtn">Show Vote Colors</button>
+                        </div>
+                    </div>
+                    <div class="statistics-box control-box">
+                        <h3>Game Statistics (Voting View)</h3>
+                        <div id="votingStatsContent"></div>
+                    </div>
+                </div>
+            </div>
+
+  
+            
+                
+<div id="tabOther" class="tab-content">
+                <div class="control-panel">
+                    <div class="manual-actions-box control-box">
+                        <h3>Manual Actions</h3>
+                        <div>
+                            <label>Player ID:</label><input type="number" id="manualPlayerId_other" min="1">
+                            <label>Reason (Optional):</label><input type="text" id="manualActionReason_other">
+                            <button onclick="manualElimination(false, null, 'manualPlayerId_other', 'manualActionReason_other')">Eliminate by ID</button>
+                            <button onclick="eliminateRandomPlayer()">Eliminate Random Player</button>
+                            <button onclick="revivePlayer('manualPlayerId_other')">Revive by ID</button>
+                        </div>
+                    </div>
+                    <div class="injury-box control-box">
+                        <h3>Manual Injury</h3>
+                        <label>Player ID:</label><input type="number" id="manualInjuryPlayerId" min="1">
+                        <h4>Injury Type:</h4>
+                        <label><input type="radio" name="injuryType" value="minor" checked> Minor (1 round, +1 Cowardice)</label>
+                        <label><input type="radio" name="injuryType" value="regular"> Regular (2 rounds, +1 Cowardice)</label>
+                        <label><input type="radio" name="injuryType" value="major"> Major (3 rounds, +2 Cowardice)</label>
+                        <label>Reason (Optional):</label><input type="text" id="manualInjuryReason">
+                        <br><br>
+                        <button onclick="manualInjury()">Apply Injury</button>
+                        <button onclick="removeInjury()">Remove Injury</button>
+                     </div>
+                    <div class="control-box" style="background-color: #f8d7da;">
+                        <h3>Manual Pregnancy</h3>
+                        <div>
+                            <label>Player ID:</label><input type="number" id="pregnantPlayerId" min="1">
+                            <br><br>
+                            <button onclick="makePlayerPregnant()" style="width: 100%;">Make Pregnant</button>
+                            <button onclick="removePregnancy()" style="width: 100%; margin-top: 5px;">Remove Pregnancy</button>
+                        </div>
+                    </div>
+                    <!-- NEW WIN CHANCE CALCULATOR BOX -->
+                    <div class="control-box" style="background-color: #e0ffff;">
+                        <h3>Win Chance Calculator</h3>
+                        <p>Analyze a player's probability of winning based on their stats and a sequence of games.</p>
+                        <button onclick="openWinChanceCalculator()" style="width: 100%;">Open Calculator</button>
+                    </div>
+                </div>
+            </div>
+
+
+  
+
+
+ <div class="game-log"><h3>Game Log</h3><ul id="gameLogList"></ul></div>
+ <div class="player-info-tooltip" id="playerTooltip"></div>
+
+  <div class="winner-history-container" id="winnerHistoryContainer" style="display: none;">
+    <h3>Game Winner History</h3>
+    <ul id="winnerHistoryList"></ul>
+</div>
+
+<div class="modal-overlay" id="playerCardModal" onclick="closePlayerCard(event)">
+    <div class="player-card" onclick="event.stopPropagation()">
+        <span class="player-card-close" onclick="closePlayerCard()">&times;</span>
+           <div class="player-card-pic">
+            <div id="playerCardUploadTrigger" title="Click to upload a custom photo">
+                <img id="playerCardImg" src="https://i.imgur.com/AJ3InNO.png" alt="Player Silhouette">
+            </div>
+            <input type="file" id="playerImageInput" accept="image/*" style="display: none;">
+            <h3 id="playerCardName">Player 000</h3>
+            <p id="playerCardStatus">Status</p>
+<button id="playerCardOpenUrlInputBtn" style="margin-top: 5px;">Edit Photo URL</button>
+            <div id="playerCardUrlInputArea" style="display: none; margin-top: 10px; padding: 5px; border: 1px solid #ccc; background-color: #f0f0f0;">
+                <label for="playerCardUrlInput" style="font-size: 0.8em; display: block; margin-bottom: 3px;">Paste Image URL:</label>
+                <input type="text" id="playerCardUrlInput" style="width: 90%; margin-bottom: 5px;">
+                <button onclick="applyUrlFromCard()" style="width: 48%; margin: 2px 1%; padding: 4px; font-size: 0.8em;">Apply URL</button>
+                <button onclick="removePhotoFromCard()" style="width: 48%; margin: 2px 1%; padding: 4px; font-size: 0.8em;">Remove Photo</button>
+            </div>
+
+        </div>
+ 
+
+        <div class="player-card-info">
+            <h4>Dossier</h4>
+            <p><strong>Age:</strong> <span id="playerCardAge"></span></p>
+            <p><strong>Gender:</strong> <span id="playerCardGender"></span></p>
+            <p><strong>Country:</strong> <span id="playerCardCountry"></span></p>
+            <p><strong>Occupation:</strong> <span id="playerCardOccupation"></span></p>
+            <p><strong>Debt:</strong> <span id="playerCardDebt"></span></p>
+            <p><strong>Relation:</strong> <span id="playerCardRelation">None</span></p>
+            <p><strong>Special Condition:</strong> <span id="playerCardSpecialCondition">None</span></p>
+            <p><strong>Allies:</strong> <span id="playerCardAllies">None</span></p>
+            <p><strong>Enemies:</strong> <span id="playerCardEnemies">None</span></p>
+            <p><strong>Injury Status:</strong> <span id="playerCardInjury">None</span></p>
+            
+            <h4>Traits</h4>
+            <div class="player-card-traits">
+                <p><strong>Strength:</strong> <span id="playerCardStrength"></span></p>
+                <p><strong>Agility:</strong> <span id="playerCardAgility"></span></p>
+                <p><strong>Intelligence:</strong> <span id="playerCardIntelligence"></span></p>
+                <p><strong>Charisma:</strong> <span id="playerCardCharisma"></span></p>
+                <p><strong>Luck:</strong> <span id="playerCardLuck"></span></p>
+                <p><strong>Cowardice:</strong> <span id="playerCardCowardice"></span></p>
+                 <p><strong>Greed:</strong> <span id="playerCardGreed"></span></p>
+            </div>
+            
+            <h4>Action Log</h4>
+            <div class="player-card-log" id="playerCardActionLog"></div>
+            
+            <!-- NEW: Player Statistics Section -->
+               <h4>Statistics <span style="cursor: pointer;" onclick="togglePlayerStats(this)">[+]</span></h4>
+            <div id="playerCardStatsDetails" style="display: none;">
+                <p><strong>Players Eliminated:</strong> <span id="playerCardElims">0</span></p>
+                <p><strong>Highest Ally Count:</strong> <span id="playerCardHighestAllies">0</span></p>
+                <p><strong>Debt After Split:</strong> <span id="playerCardDebtSplit">N/A</span></p>
+            </div>
+
+            <h4 style="margin-top: 15px;">Special Actions</h4>
+            <button id="forceWinnerBtn" style="width: 100%; padding: 8px; font-weight: bold;"></button>
+        </div>
+ 
+
+    </div>
+</div>
+
+<!-- NEW: WIN CHANCE CALCULATOR MODAL -->
+<div class="win-chance-modal-overlay" id="winChanceModal">
+    <div class="win-chance-modal-content">
+        <span class="win-chance-modal-close" onclick="closeWinChanceCalculator()">&times;</span>
+        <h3>Win Chance Calculator</h3>
+        <p id="winChancePredictionNote">This is a heuristic prediction based on stats, not a guarantee. Enter a game name on each new line.</p>
+        
+        <div class="win-chance-controls">
+            <div class="input-group">
+                <label for="winChancePlayerId">Primary Player ID:</label>
+                <input type="number" id="winChancePlayerId" min="1">
+                <label for="winChanceCompareIds" style="margin-top: 10px;">Compare With (IDs separated by comma):</label>
+                <input type="text" id="winChanceCompareIds" placeholder="e.g., 67, 101, 218">
+
+                <button onclick="showTopContenders()" style="width: 100%; margin-top: 15px;">Show Top 10 Contenders</button>
+                <div id="topContendersList" style="margin-top: 10px;"></div>
+            </div>
+            <div class="input-group">
+                <label for="winChanceGameSelect">Select Game to Add:</label>
+
+                <select id="winChanceGameSelect" style="width: 100%; margin-bottom: 5px;"></select>
+                <button onclick="addGameToPredictionList()" style="width: 100%; margin-bottom: 5px;">Add Game to List</button>
+                <label>Prediction Game List:</label>
+                <div id="winChanceGameListContainer" style="background: white; border: 1px solid #999; min-height: 60px; padding: 5px; border-radius: 3px;"></div>
+                <button onclick="clearPredictionList()" style="width: 100%; margin-top: 5px;">Clear List</button>
+            </div>
+        </div>
+
+        
+        <div style="text-align: center; margin-bottom: 15px;">
+             <button onclick="calculateWinChance(true)">Predict Win % Trajectory</button>
+             <button onclick="calculateWinChance(false)">Show Current Win % Trajectory</button>
+             <button onclick="calculateSurvivalChance()">Show Per-Game Survival %</button>
+        </div>
+
+
+        <div class="win-chance-graph-container">
+            <canvas id="winChanceCanvas"></canvas>
+        </div>
+    </div>
+</div>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"4c6229722a6346bc8eb5cb0e5eae5d41","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+</body>
+</html>

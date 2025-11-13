@@ -1,0 +1,5896 @@
+
+let playerGroupId = {};
+let players = [];
+let round = 0;
+let customPlayerPhotos = {};
+let forcedWinnerId = null;
+let winChanceChart = null;
+const chartColors = ['blue', 'red', 'green', 'purple', 'orange', 'black'];
+let roundEliminations = [];
+let personalityPlayers = new Set();
+let superpoweredPlayerIds = new Set();
+let eliminatedHidden = false;
+let season2ModeActive = false;
+let showVoteColors = false;
+let votingRoundCount = 0;
+let showGroups = false;
+let allianceGroupColors = {};
+let firstEliminationOfGame = false;
+
+// --- NEW Feature Variables ---
+let favoritedPlayerIds = new Set();
+let eliminationOrder = [];
+let gameHistorySnapshots = [];
+let isViewingHistory = false;
+let livePlayersState = null;
+let usedEvents = new Set(); // To track used events per game
+
+// --- NEW Archive Viewing Variables
+let isViewingArchivedGame = false;
+let liveGameStateBackup = null;
+
+let gridPositions = {}; // Player ID -> {x, y} mapping
+let originalRosterSize = 0; // Tracks the initial starting count (e.g., 456)
+let isCompactedView = false;
+
+
+let customGames = [];
+
+// Animation variables
+let animationModeEnabled = false;
+let animationPaused = false;
+let animationTimeoutId = null;
+let playersToEliminateInAnimation = [];
+let animatedEliminationIndex = 0;
+let announcementTimeoutId = null;
+
+let currentPrizePot = 0;
+
+// --- VIP BETTING & ACHIEVEMENTS VARIABLES ---
+let bettingBalance = 1000000;
+let isGameModified = false;
+let currentBets = []; // { playerId, amount, initialRound, potentialPayout }
+let achievements = {};
+
+const TOTAL_PRIZE_MONEY = 45600000; // Changed from KRW to USD
+const countries = ["China", "India", "USA", "Brazil", "Nigeria", "Russia", "Japan", "Germany", "UK", "France", "Canada", "Australia", "South Korea", "Mexico", "Indonesia", "Pakistan", "Bangladesh", "Ethiopia", "Philippines", "Egypt", "Vietnam", "DR Congo", "Turkey", "Iran", "Thailand", "Italy", "South Africa", "Tanzania", "Myanmar", "Colombia", "Kenya", "Spain", "Argentina", "Ukraine", "Uganda", "Algeria", "Sudan", "Iraq", "Afghanistan", "Poland", "Morocco", "Saudi Arabia", "Uzbekistan", "Peru", "Angola", "Malaysia", "Mozambique", "Ghana", "Yemen", "Nepal", "Venezuela"];
+const occupations = ["Teacher", "Engineer", "Doctor", "Nurse", "Farmer", "Police Officer", "Firefighter", "Lawyer", "Accountant", "Architect", "Pilot", "Chef", "Dentist", "Pharmacist", "Software Developer", "Electrician", "Plumber", "Carpenter", "Mechanic", "Veterinarian", "Scientist", "Journalist", "Artist", "Musician", "Actor", "Unemployed", "Unemployed", "Unemployed", "Unemployed", "Unemployed", "Unemployed", "Unemployed", "Unemployed", "Unemployed"];
+const genders = ["Male", "Female"];
+
+const firstNamesMale = ["Liam", "Noah", "Oliver", "Elijah", "James", "William", "Benjamin", "Lucas", "Henry", "Theodore", "Leo", "Julian", "Alexander", "Maverick", "Asher", "Mateo", "Ethan", "Ezra", "Sebastian", "Jackson", "Daniel", "Michael", "Logan", "Owen", "Samuel", "Jacob", "Jack", "Levi", "Wyatt", "Mateo", "Gabriel", "Luke", "Anthony", "Grayson", "Dylan", "Jayden", "Muhammad", "Isaiah", "Aaron", "Joseph", "Charles", "David", "Christian", "Andrew", "George", "John", "Nathan", "Christopher", "Thomas", "Ryan", "Jonathan", "Adrian", "Caleb", "Miles", "Josiah", "Eli", "Isaac", "Lincoln", "Kai", "Nolan", "Hudson", "Declan", "Dominic", "Cameron", "Brooks", "Gael", "Everett", "Jordan", "Carson", "Jasper", "August", "Rowan", "Silas", "Cole", "Wesley", "Harrison", "Weston", "Bennett", "Remi", "Bennett", "Finnegan", "Milo", "Rhys", "Arlo", "Jude", "Asa", "Leon", "Bodhi", "Orion", "Wilder", "Fox", "Knox", "Beckett", "Atticus", "Alden", "Soren", "Stellan", "Gus", "Ozzy", "Bear", "Wolf", "Arrow", "Fielder", "Shepherd", "Archer", "Hunter", "Ryder", "Sawyer", "Forrest", "River", "Clay", "Ford", "Sterling", "Kian", "Caspian", "Rune", "Thorne", "Valor", "Journey", "Atlas", "Apollo", "Cassian", "Leif", "Odin", "Thorin", "Vance", "Zion", "Blaise", "Caelen", "Koa", "Remy", "Yves", "Alistair", "Clement", "Emrys", "Euan", "Gideon", "Quinn", "Tiernan", "Vaughn", "Zev", "Heath", "Larkin", "Perry", "Quincy", "Reid", "Sutton", "Wade", "Yuri", "Zane", "Aldo", "Bastian", "Bruno", "Cian", "Cody", "Conrad", "Cosmo", "Dorian", "Emmett", "Enzo", "Felix", "Flynn", "Franco", "Giovanni", "Hugo", "Ignacio", "Jasper", "Julian", "Kade", "Kaiser", "Keaton", "Lachlan", "Lazaro", "Maddox", "Matias", "Miguel", "Nash", "Neo", "Otto", "Pascal", "Pax", "Phoenix", "Quentin", "Raul", "Rex", "Rocco", "Romeo", "Ronan", "Roscoe", "Rory", "Ruben", "Salvatore", "Santiago", "Sasha", "Sterling", "Tate", "Tristan", "Valentino", "Victor", "Viggo", "Vito", "Warren", "Wolfgang", "Xavier", "Yael", "Zander", "Zeus", "Arthur", "Barnaby", "Bartholomew", "Benedict", "Benson", "Bernard", "Bertram", "Byron", "Cedric", "Clarence", "Clifford", "Cornelius", "Curtis", "Cyrus", "Desmond", "Edgar", "Edmund", "Edwin", "Eugene", "Francis", "Frederick", "Gerald", "Gilbert", "Harold", "Harvey", "Herbert", "Homer", "Horace", "Irving", "Jerome", "Julian", "Leon", "Louis", "Luther", "Marvin", "Melvin", "Merton", "Milton", "Montgomery", "Morton", "Norman", "Oscar", "Otto", "Patrick", "Percival", "Peter", "Philip", "Raymond", "Reginald", "Richard", "Roger", "Roland", "Ronald", "Rufus", "Russell", "Stanley", "Stuart", "Terence", "Theodore", "Timothy", "Vincent", "Wallace", "Walter", "Warren", "Wilfred", "Willard", "Clint", "Dustin", "Chad", "Drew", "Todd", "Shawn", "Brad", "Corey", "Dustin", "Jesse", "Shane", "Trent", "Blake", "Clayton", "Dillon", "Dustin", "Garrett", "Jeremy", "Justin", "Kevin", "Kyle", "Mason", "Mitchell", "Preston", "Spencer", "Taylor", "Travis", "Trevor", "Tyler", "Wyatt", "Zachary", "Brady", "Brody", "Chance", "Chase", "Cody", "Colby", "Dakota", "Dallas", "Denver", "Devin", "Dusty", "Easton", "Fisher", "Gage", "Houston", "Hunter", "Jackson", "Jaden", "Jared", "Jordan", "Kaden", "Kai", "Kayden", "Keegan", "Kellan", "Kieran", "Kobe", "Kyler", "Lane", "Landon", "Levi", "Liam", "Logan", "Lucas", "Malachi", "Mason", "Milo", "Myles", "Noah", "Owen", "Parker", "Peyton", "Phoenix", "Preston", "Quinn", "Riley", "Rory", "Rowan", "Ryder", "Sawyer", "Seth", "Silas", "Skyler", "Spencer", "Tanner", "Tate", "Teagan", "Tyler", "Wesley", "Wyatt", "Zane", "Zeus", "Abner", "Aldous", "Ames", "Ansel", "Barnaby", "Blaise", "Blythe", "Booker", "Bram", "Caius", "Callum", "Cato", "Channing", "Clayton", "Crispin", "Cyprian", "Digby", "Dashiell", "Emilio", "Ephraim", "Ferdinand", "Florian", "Gideon", "Gus", "Ignatius", "Inigo", "Jago", "Jiro", "Klaus", "Lazarus", "Lysander", "Malachy", "Marcel", "Marius", "Maxim", "Montgomery", "Nestor", "Oberon", "Octavius", "Peregrine", "Philemon", "Primo", "Rainer", "Ragnar", "Raphael", "Remus", "Sylvan", "Thaddeus", "Valerius", "Viggo", "Wolfgang", "Xerxes", "Yves", "Zephyr", "Ares", "Ajax", "Caius", "Draco", "Echo", "Jett", "Kael", "Loki", "Morpheus", "Onyx", "Orion", "Pax", "Ragnar", "Rook", "Storm", "Titan", "Valor", "Wilder", "Zane", "Ace", "Dash", "Jet", "Kit", "Lex", "Pax", "Rhett", "Taj", "Zev", "Beau", "Blaise", "Brody", "Dane", "Finn", "Gage", "Jude", "Knox", "Milo", "Quinn", "Rhys", "Sage", "Tate", "Zion", "Adonis", "Alaric", "Apollo", "Augustus", "Balthazar", "Cassian", "Caspian", "Celestin", "Crispin", "Cyril", "Demetrius", "Dorian", "Evander", "Fabian", "Gareth", "Hadrian", "Ignatius", "Jasper", "Julian", "Lysander", "Maximus", "Orion", "Percival", "Philemon", "Rafferty", "Ragnar", "Remus", "Soren", "Sterling", "Thaddeus", "Valentino", "Valerius", "Vincent", "Virgil", "Wolfgang", "Xavier", "Yves", "Zephyr", "Zeus", "Bartholomew", "Benedict", "Constantine", "Cornelius", "Cyprian", "Desmond", "Edgar", "Edmund", "Edwin", "Ernest", "Eugene", "Frederick", "Geoffrey", "Gilbert", "Harold", "Harvey", "Herbert", "Horace", "Humphrey", "Jeremy", "Julian", "Lawrence", "Leopold", "Louis", "Luther", "Marvin", "Melvin", "Milton", "Montgomery", "Mortimer", "Nathaniel", "Norman", "Orlando", "Osmond", "Oswald", "Percival", "Philemon", "Quentin", "Reginald", "Roland", "Roscoe", "Rufus", "Russell", "Sidney", "Stanley", "Stuart", "Terence", "Theodore", "Timothy", "Victor", "Wallace", "Walter", "Wilfred", "Willard", "Winslow", "Worthington", "York", "Zebedee", "Zelmar", "Zenas", "Zephaniah", "Zeth", "Zoltan", "Robert", "Dalton"];
+const firstNamesFemale = ["Olivia", "Emma", "Ava", "Sophia", "Isabella", "Charlotte", "Amelia", "Mia", "Harper", "Evelyn", "Abigail", "Emily", "Ella", "Scarlett", "Grace", "Chloe", "Victoria", "Lily", "Hannah", "Layla", "Zoey", "Penelope", "Riley", "Nora", "Hazel", "Eleanor", "Violet", "Aurora", "Audrey", "Elizabeth", "Stella", "Lucy", "Paisley", "Everly", "Anna", "Natalie", "Ruby", "Alice", "Freya", "Willow", "Sophie", "Genesis", "Ivy", "Naomi", "Elena", "Sarah", "Clara", "Alexa", "Nova", "Madeline", "Bella", "Maya", "Maria", "Serenity", "Autumn", "Mila", "Cora", "Leah", "Adeline", "Luna", "Gianna", "Valentina", "Peyton", "Aria", "Esme", "Sadie", "Skylar", "Brooklyn", "Amaya", "Kinsley", "Delilah", "Kayla", "Camila", "Zara", "Maeve", "Iris", "Jade", "Summer", "Rosie", "Daisy", "Juniper", "Rowan", "Sage", "Olive", "Wren", "Poppy", "Lyra", "Cleo", "Fern", "Flora", "Dawn", "Echo", "Fable", "Journey", "Lyric", "Melody", "Harmony", "Winter", "Spring", "Rain", "River", "Sky", "Star", "Moon", "Sun", "Ocean", "Lake", "Meadow", "Forest", "Rose", "Lily", "Blossom", "Petal", "Sunny", "Cloud", "Storm", "Twilight", "Celeste", "Starlight", "Seraphina", "Evangeline", "Ophelia", "Persephone", "Anastasia", "Genevieve", "Clementine", "Guinevere", "Cordelia", "Lavender", "Magnolia", "Primrose", "Adalyn", "Adelaide", "Adriana", "Alana", "Alessandra", "Alexandra", "Alexis", "Alina", "Alison", "Allison", "Alma", "Alyssa", "Amanda", "Amber", "Amy", "Andrea", "Angel", "Angela", "Angelina", "Annabelle", "Annelise", "Annie", "Anya", "April", "Arabella", "Ariana", "Ariel", "Ashley", "Astrid", "Athena", "Aubree", "Audrina", "Aurelia", "Aviana", "Ayana", "Bianca", "Blair", "Brianna", "Bridget", "Bronte", "Brooke", "Brynn", "Callie", "Cara", "Carly", "Carolina", "Cassandra", "Catalina", "Catherine", "Cecilia", "Celina", "Chanel", "Charlotte", "Chelsea", "Cheryl", "Christine", "Cindy", "Claire", "Coco", "Colette", "Constance", "Crystal", "Cynthia", "Dahlia", "Dana", "Daphne", "Darcy", "Davina", "Deborah", "Denise", "Desiree", "Diana", "Dixie", "Dolores", "Donna", "Dorothy", "Edith", "Edna", "Eileen", "Elaine", "Elara", "Eliana", "Eliza", "Elle", "Eloise", "Elsa", "Emilia", "Esther", "Eudora", "Eugenie", "Evie", "Fallon", "Felicity", "Fiona", "Florence", "Frances", "Francesca", "Gabriella", "Georgia", "Giselle", "Glynnis", "Greta", "Gretchen", "Gwen", "Hadley", "Hallie", "Hayden", "Heather", "Heidi", "Helena", "Holly", "Hope", "Imogen", "Ines", "Ingrid", "Iona", "Ireland", "Isla", "Jasmine", "Jenna", "Jennifer", "Jessica", "Jillian", "Joanna", "Jocelyn", "Johanna", "Jolene", "Josephine", "Joy", "Joyce", "Judith", "Julia", "Juliet", "Justine", "Kara", "Karen", "Karina", "Katherine", "Kathleen", "Katie", "Keira", "Kelsey", "Kendra", "Kerry", "Kimberly", "Kira", "Kitty", "Lara", "Laura", "Laurel", "Lauren", "Leilani", "Lena", "Leslie", "Lexie", "Lila", "Lilith", "Lillian", "Linnea", "Lisa", "Liv", "Lois", "Lorelei", "Loretta", "Lourdes", "Lucia", "Lucille", "Luella", "Lydia", "Mabel", "Macy", "Madeleine", "Madelyn", "Mae", "Maisie", "Malinda", "Mallory", "Margot", "Margaret", "Mariah", "Mariana", "Marigold", "Marilyn", "Marina", "Marion", "Marisa", "Marjorie", "Martha", "Martina", "Mary", "Matilda", "Maura", "Maureen", "Mavis", "Maxine", "Melanie", "Melissa", "Meredith", "Michelle", "Mildred", "Millicent", "Minnie", "Mirabel", "Miranda", "Miriam", "Monica", "Muriel", "Myra", "Nadia", "Nancy", "Nell", "Nellie", "Nerida", "Nicole", "Nina", "Noelle", "Nadia", "Odette", "Olga", "Olympia", "Orla", "Paloma", "Pamela", "Paola", "Paris", "Phoebe", "Phyllis", "Piper", "Priscilla", "Queenie", "Rachael", "Ramona", "Raquel", "Rebecca", "Regina", "Renata", "Renee", "Roberta", "Robin", "Rochelle", "Romilly", "Rosemary", "Roxanne", "Ruth", "Sabrina", "Samantha", "Sandra", "Shannon", "Shayla", "Shelby", "Shirley", "Sierra", "Simone", "Sienna", "Skye", "Stacy", "Stephanie", "Sue", "Susan", "Susanna", "Suzanne", "Sylvia", "Tabitha", "Talia", "Tamara", "Tanya", "Tara", "Tatum", "Teresa", "Tess", "Thalia", "Thea", "Thelma", "Tiffany", "Tina", "Trixie", "Ursula", "Valerie", "Vanessa", "Vera", "Veronica", "Vivian", "Wendy", "Whitney", "Wilhelmina", "Winifred", "Xenia", "Yara", "Yasmin", "Yvette", "Yvonne", "Zelda", "Zia", "Zinnia", "Zoe", "Adair", "Aine", "Bronwyn", "Caoimhe", "Ciara", "Deirdre", "Eilis", "Fiona", "Grainne", "Iona", "Keira", "Mairead", "Niamh", "Orla", "Saoirse", "Siobhan", "Sorcha", "Teagan", "Una", "Alba", "Amara", "Anika", "Astrid", "Ayda", "Beatrix", "Blanca", "Calliope", "Cosima", "Dahlia", "Elara", "Freya", "Greta", "Inara", "Iris", "Isolde", "Juno", "Kira", "Lana", "Lena", "Linnea", "Luna", "Maeve", "Mara", "Marta", "Neva", "Nila", "Oona", "Petra", "Rhea", "Romana", "Saga", "Sana", "Shira", "Silvana", "Sonja", "Tabitha", "Thalia", "Thea", "Una", "Vega", "Vera", "Xenia", "Yara", "Zara", "Zia", "Adina", "Anya", "Briar", "Bronte", "Cambria", "Coral", "Daphne", "Delphine", "Eira", "Elodie", "Estelle", "Fawn", "Gemma", "Indigo", "Juniper", "Lavender", "Lilac", "Marigold", "Melody", "Nerida", "Odessa", "Opal", "Paloma", "Petal", "Posey", "Rue", "Saffron", "Seren", "Solstice", "Story", "Tamsin", "Twila", "Willa", "Wisteria", "Zinnia", "Acacia", "Amaryllis", "Ambrosia", "Anemone", "Aurelia", "Calypso", "Celestine", "Chrysalis", "Dahlia", "Elysia", "Fleur", "Hyacinth", "Jessamine", "Lavender", "Lilith", "Magnolia", "Narcissa", "Orchid", "Petunia", "Primrose", "Rosalind", "Saffron", "Seraphina", "Sylvana", "Thalassa", "Verbena", "Violette", "Zephyrine"];
+const lastNames = ["Smith", "Johnson", "Williams", "Brown", "Jones", "Miller", "Davis", "Garcia", "Rodriguez", "Wilson", "Martinez", "Anderson", "Taylor", "Thomas", "Hernandez", "Moore", "Martin", "Jackson", "Thompson", "White", "Lopez", "Lee", "Gonzalez", "Harris", "Clark", "Lewis", "Robinson", "Walker", "Perez", "Hall", "Young", "Allen", "Sanchez", "Wright", "King", "Scott", "Green", "Baker", "Adams", "Nelson", "Hill", "Ramirez", "Campbell", "Mitchell", "Roberts", "Carter", "Phillips", "Evans", "Turner", "Torres", "Parker", "Collins", "Edwards", "Stewart", "Flores", "Morris", "Nguyen", "Murphy", "Rivera", "Cook", "Morgan", "Cooper", "Bailey", "Reed", "Kelly", "Howard", "Diaz", "Bennett", "Gray", "James", "Myers", "Ruiz", "Hughes", "Cox", "Ward", "Foster", "Gonzales", "Bell", "Coleman", "Russell", "Long", "Patterson", "Griffin", "Watson", "Price", "Hayes", "Sanders", "Perry", "Powell", "Ramirez", "Ross", "Brooks", "Cruz", "Ortiz", "Gomez", "Murray", "Ford", "Castillo", "Wood", "Wagner", "Fisher", "Stone", "Todd", "Webb", "Wells", "West", "Wheeler", "Whitehead", "Wilkinson", "Winters", "Wolf", "Woods", "Yates", "York", "Youngblood", "Zimmerman", "Abbott", "Barnaby", "Beckett", "Caspian", "Everhart", "Finch", "Hawthorne", "Kincaid", "Larkin", "Montgomery", "Oakley", "Pemberton", "Quill", "Reynolds", "Sterling", "Thorne", "Vance", "Whittaker", "Wyatt", "Zephyr", "Adams", "Albers", "Aldridge", "Alexander", "Allison", "Armstrong", "Arnold", "Ashworth", "Atkins", "Baker", "Baldwin", "Banks", "Barber", "Barker", "Barnes", "Barnett", "Barrett", "Barton", "Bateman", "Baxter", "Bennett", "Bentley", "Berry", "Bishop", "Black", "Blair", "Blake", "Booth", "Bowen", "Boyd", "Bradley", "Bray", "Brooks", "Brown", "Browne", "Bryant", "Burke", "Burns", "Burton", "Butler", "Cain", "Calhoun", "Callahan", "Cameron", "Campbell", "Carey", "Carlson", "Carpenter", "Carroll", "Carson", "Carter", "Case", "Casey", "Cash", "Castle", "Chambers", "Chandler", "Chapman", "Chase", "Chen", "Childs", "Christensen", "Christian", "Church", "Clark", "Clayton", "Clements", "Cobb", "Coffey", "Cole", "Coleman", "Collins", "Combs", "Conley", "Connolly", "Connor", "Cook", "Cooper", "Couch", "Cowan", "Cox", "Craig", "Crawford", "Cross", "Crowley", "Cruz", "Curry", "Dale", "Dalton", "Daniels", "Darby", "Davidson", "Davies", "Dawson", "Dean", "Decker", "Delgado", "Dempsey", "Dennis", "Diaz", "Dickerson", "Dixon", "Dodd", "Dolan", "Donovan", "Douglas", "Downs", "Doyle", "Drake", "Duke", "Dunn", "Durham", "Dwyer", "Eaton", "Edwards", "Elliott", "Ellis", "Emerson", "Estes", "Evans", "Everett", "Fairchild", "Farrell", "Faulkner", "Fenton", "Ferguson", "Ferris", "Fields", "Finch", "Finley", "Fisher", "Fitzgerald", "Flannigan", "Fleming", "Fletcher", "Flores", "Flynn", "Ford", "Forrest", "Foster", "Fowler", "Fox", "Frank", "Franklin", "Fraser", "Frederick", "Freeman", "French", "Fuller", "Gage", "Gallagher", "Galloway", "Gamble", "Garcia", "Gardner", "Garrett", "Gates", "Gibson", "Gilbert", "Gilmore", "Glass", "Glenn", "Glover", "Godfrey", "Goldsmith", "Gonzales", "Goodman", "Goodwin", "Gordon", "Graham", "Grant", "Gray", "Green", "Greene", "Gregory", "Griffin", "Gross", "Guerra", "Guthrie", "Hadley", "Hale", "Hall", "Hamilton", "Hancock", "Hardy", "Harper", "Harris", "Harrison", "Hart", "Harvey", "Hawkins", "Hayes", "Haynes", "Hays", "Head", "Heard", "Heath", "Henderson", "Henry", "Herrera", "Hicks", "Higgins", "Hill", "Hobbs", "Hodges", "Hoffman", "Holland", "Holmes", "Holt", "Hood", "Hooper", "Horne", "Horton", "House", "Howard", "Howell", "Hubbard", "Hudson", "Huff", "Hughes", "Hunt", "Hunter", "Hurley", "Jackson", "Jacobs", "James", "Jarvis", "Jenkins", "Jensen", "Jimenez", "Johnson", "Jones", "Jordan", "Joseph", "Joyce", "Justice", "Kaiser", "Kane", "Kay", "Keating", "Keith", "Keller", "Kelley", "Kelly", "Kennedy", "Kent", "Kerr", "Khan", "Kim", "King", "Kirby", "Kirk", "Klein", "Knight", "Knox", "Kramer", "Lane", "Lang", "Larsen", "Larson", "Lawrence", "Lawson", "Layton", "Lee", "Lehman", "Lester", "Lewis", "Little", "Lloyd", "Locke", "Logan", "Long", "Lopez", "Love", "Lowery", "Lucas", "Lynch", "Lyon", "Mack", "Madden", "Madison", "Mahoney", "Malone", "Mann", "Manning", "Marshall", "Martin", "Martinez", "Mason", "Mathews", "Mathis", "Maxwell", "May", "Mayer", "Mayo", "McCarthy", "McClain", "McConnell", "McCoy", "McDonald", "McFarland", "McGee", "McGrath", "McGregor", "McIntyre", "McKay", "McKee", "McKinney", "McLaughlin", "McLean", "McLeod", "McMahon", "McMillan", "McNamara", "Medina", "Mendoza", "Mercer", "Merritt", "Meyer", "Miles", "Miller", "Mills", "Mitchell", "Monroe", "Montgomery", "Moore", "Morales", "Morgan", "Morris", "Morrison", "Morse", "Morton", "Moss", "Mullen", "Munoz", "Murphy", "Murray", "Myers", "Nash", "Neal", "Nelson", "Newman", "Newton", "Nguyen", "Nichols", "Noble", "Nolan", "Norman", "Norris", "Norton", "Nunez", "O'Brien", "O'Connell", "O'Connor", "O'Donnell", "O'Neal", "O'Neil", "Olsen", "Olson", "O'Malley", "Owen", "Owens", "Pace", "Page", "Palmer", "Parker", "Parks", "Patterson", "Paul", "Payne", "Perez", "Perkins", "Perry", "Peters", "Peterson", "Phelps", "Phillips", "Pierce", "Pittman", "Poole", "Porter", "Potter", "Powell", "Powers", "Pratt", "Preston", "Price", "Priest", "Prince", "Pugh", "Quinn", "Ramirez", "Ramsey", "Randall", "Randolph", "Ray", "Reed", "Reese", "Reid", "Reilly", "Reyes", "Reynolds", "Rice", "Richards", "Richardson", "Richmond", "Riley", "Rios", "Rivera", "Roberts", "Robinson", "Rodgers", "Rodriguez", "Rogers", "Romero", "Rose", "Ross", "Roth", "Rowe", "Roy", "Rubin", "Ruiz", "Russell", "Ryan", "Salazar", "Salinas", "Sanchez", "Sanders", "Santiago", "Santos", "Schmidt", "Schneider", "Scott", "Sears", "Shaw", "Shepherd", "Sherman", "Short", "Silva", "Simmons", "Simon", "Simpson", "Singh", "Sisk", "Smart", "Smith", "Snyder", "Solomon", "Soto", "Spence", "Spencer", "Stanton", "Stephens", "Sterling", "Stevens", "Stewart", "Stone", "Story", "Strickland", "Sullivan", "Sutton", "Swanson", "Taylor", "Temple", "Terrell", "Terry", "Thomas", "Thompson", "Thornton", "Titus", "Todd", "Torres", "Townsend", "Travis", "Trimble", "Trujillo", "Tucker", "Turner", "Tyler", "Underwood", "Valdez", "Vance", "Vargas", "Vaughn", "Vega", "Velez", "Vincent", "Vogel", "Wade", "Wagner", "Walker", "Wallace", "Walsh", "Ward", "Warner", "Warren", "Washington", "Waters", "Watkins", "Watson", "Watts", "Wayne", "Webb", "Weber", "Webster", "Weeks", "Wells", "West", "Wheeler", "White", "Whittaker", "Wilcox", "Wilder", "Wiley", "Wilkins", "Wilkinson", "Williams", "Williamson", "Willis", "Wilson", "Winters", "Wolf", "Wood", "Woodard", "Woods", "Worley", "Wright", "Wyatt", "Yates", "Young", "Zavala", "Ziegler", "Zimmerman", "Zuniga", "Abercrombie", "Addington", "Albright", "Alden", "Ames", "Anson", "Arlington", "Ashby", "Ashford", "Bainbridge", "Beaumont", "Beckwith", "Belmont", "Beverly", "Blackwood", "Blakely", "Bradford", "Bridgewater", "Camden", "Carrington", "Cavendish", "Chesapeake", "Cromwell", "Darlington", "Decker", "Devereaux", "Fairfax", "Faraday", "Fitzwilliam", "Fremont", "Garrison", "Hastings", "Haverford", "Hawthorne", "Kensington", "Kimball", "Kingsley", "Langdon", "Livingston", "Lowell", "Montague", "Newcomb", "Prescott", "Radcliffe", "Rutherford", "Sheridan", "Stanford", "Stratford", "Thatcher", "Vanderbilt", "Wakefield", "Warwick", "Wentworth", "Westcott", "Wharton", "Wellesley", "Westwood", "Whitaker", "Winchester", "Woodruff", "Worthington", "Yorkshire", "Aarons", "Applegate", "Armstrong", "Ashworth", "Atwater", "Babbage", "Baird", "Barclay", "Barton", "Baxter", "Beatty", "Bellamy", "Benson", "Bentley", "Bertram", "Bingham", "Bishop", "Blackburn", "Blakely", "Booth", "Boyd", "Bradshaw", "Bragg", "Brendon", "Bridger", "Brooke", "Browning", "Buchanan", "Burton", "Byrd", "Cadwallader", "Caldwell", "Campion", "Carrington", "Chambers", "Chandler", "Chapman", "Chesterton", "Cleveland", "Clifford", "Collier", "Connelly", "Conway", "Corbett", "Cormac", "Crawford", "Crosby", "Davenport", "Davison", "Dempsey", "Denison", "Digby", "Donnelly", "Donovan", "Drummond", "Dudley", "Dunbar", "Edison", "Ellington", "Fairfield", "Farrell", "Faulkner", "Fielding", "Fletcher", "Fordham", "Forrester", "Fowler", "Galloway", "Garner", "Garrison", "Gifford", "Goodrich", "Gordon", "Gould", "Graham", "Grantham", "Grey", "Grosvenor", "Hadfield", "Hale", "Harding", "Harrington", "Hartley", "Hathaway", "Hawley", "Hayden", "Hensley", "Hobson", "Holbrook", "Holland", "Hollis", "Hopkins", "Howe", "Ingram", "Irving", "Jardine", "Jenkinson", "Kingsley", "Kirkland", "Latham", "Lawrence", "Leighton", "Leland", "Leslie", "Livingstone", "Lockwood", "Longfellow", "Lowell", "Macaulay", "MacDonald", "MacGregor", "MacKenzie", "MacLeod", "MacPherson", "Maddox", "Manning", "Marlowe", "Mather", "Maxwell", "McAllister", "McArthur", "McCallum", "McClure", "McConnell", "McCormick", "McCracken", "McDaniel", "McDowell", "McFarlane", "McGill", "McGovern", "McGregor", "McGuire", "McIntosh", "McKay", "McKee", "McKenna", "McKenzie", "McKinley", "McLaren", "McLaughlin", "McLean", "McLeod", "McMahon", "McMillan", "McMullin", "McNally", "McQueen", "Meadows", "Middleton", "Milton", "Monaghan", "Montague", "Montgomery", "Moreland", "Morley", "Morton", "Mulligan", "Munro", "Napier", "Nash", "Newell", "Newland", "Newman", "Nightingale", "Norton", "Nugent", "Oakley", "O'Connell", "O'Donnell", "O'Hara", "O'Malley", "O'Reilly", "Paine", "Paloma", "Parnell", "Partridge", "Pemberton", "Pendleton", "Pennington", "Percival", "Piers", "Pritchard", "Radcliffe", "Raleigh", "Ramsey", "Randal", "Rawlings", "Redmond", "Reynolds", "Ridley", "Rigby", "Rochester", "Rutherford", "Rutledge", "Sandford", "Scarborough", "Sedgwick", "Shawcross", "Shepherd", "Sheridan", "Shirley", "Sinclair", "Slater", "Somerville", "Spaulding", "Standish", "Stanton", "Sterling", "Stevenson", "Stockton", "Stratford", "Sutherland", "Sutton", "Taggart", "Talbot", "Talley", "Tattersall", "Templeton", "Thackeray", "Thatcher", "Thornton", "Thurston", "Tierney", "Tippett", "Townsend", "Tremblay", "Truax", "Tudor", "Turnbull", "Underwood", "Vance", "Vaughan", "Vickers", "Waddington", "Wakefield", "Walden", "Waller", "Walton", "Warburton", "Wardell", "Warner", "Warwick", "Watkins", "Weatherby", "Webster", "Wellington", "Wentworth", "Westbrook", "Weston", "Wheatley", "Wheeler", "Whistler", "Whitcomb", "Whitehead", "Whittaker", "Wickham", "Wilder", "Wilkinson", "Willoughby", "Winchester", "Windsor", "Wingate", "Winslow", "Winterbottom", "Woodhouse", "Woodruff", "Woodward", "Worthington", "Wyatt", "Yardley", "Yeoman", "Youngblood", "Ziegler", "Zimmerman"];
+
+
+let allGamesHistory = [];
+let currentGameNumber = 0;
+let isPlayer001VIP = false;
+let player001VIP_Id = null;
+let audioContext;
+const allianceColors = [
+    '#8dd3c7','#ffffb3','#bebada','#fb8072','#80b1d3','#fdb462','#b3de69','#fccde5','#d9d9d9','#bc80bd',
+    '#ccebc5','#ffed6f','#a6cee3','#1f78b4','#b2df8a','#33a02c','#fb9a99','#e31a1c','#fdbf6f','#ff7f00'
+];
+
+// Easter Egg Data
+const easterEggPlayersData = {
+    1: { // This is a resolver function for the 50/50 chance
+        resolve: () => {
+            if (Math.random() < 0.5) {
+                return { // Oh Il-nam
+                    name: "Oh Il-nam",
+                    personality: { age: 77, gender: "Male", country: "South Korea", occupation: "Retired", debt: 0 },
+                    stats: { strength: 1, agility: 1, intelligence: 15, charisma: 10, luck: 10, cowardice: 2, greed: 10 },
+                    photoUrl: "https://static.wikia.nocookie.net/thesquidgame/images/2/29/Oh-ll-nam_2020.png/revision/latest/scale-to-width/360?cb=20250126120528" 
+                };
+            } else { // Young-Il
+                return {
+                    name: "Young-Il",
+                    personality: { age: 35, gender: "Male", country: "South Korea", occupation: "Investor", debt: 0 },
+                    stats: { strength: 10, agility: 10, intelligence: 15, charisma: 10, luck: 10, cowardice: 0, greed: 10 },
+                    photoUrl: "https://preview.redd.it/who-is-player-001-in-the-first-game-of-season-2-v0-rvhu1y3wb1ie1.jpeg?width=350&auto=webp&s=29a2aced0cd30e8fffbcb5ebbc0ffc2979d05da6" 
+                };
+            }
+        }
+    },
+    7: {
+        name: "Park Yong-sik",
+        personality: { age: 39, gender: "Male", country: "South Korea", occupation: "Unemployed", debt: 210000 },
+        stats: { strength: 5, agility: 4, intelligence: 5, charisma: 2, luck: 5, cowardice: 11, greed: 3 },
+        photoUrl: "https://i.redd.it/here-is-what-i-think-will-happen-to-player-007-yong-sik-and-v0-km4tveirmyre1.jpg?width=1079&format=pjpg&auto=webp&s=c50bbe2a5061a08a287363c2ea8ea67d37e0144e" // FILLER URL
+    },
+    44: {
+        name: "Seon-Nyeo",
+        personality: { age: 49, gender: "Female", country: "South Korea", occupation: "Shaman", debt: 100000 },
+        stats: { strength: 4, agility: 5, intelligence: 8, charisma: 15, luck: 10, cowardice: 6, greed: 10 },
+        photoUrl: "https://static.wikia.nocookie.net/thesquidgame/images/b/bd/Player044_N.jpg/revision/latest/scale-to-width-down/1200?cb=20250630194513" 
+    },
+    67: { 
+        name: "Kang Sae-byeok",
+        personality: { age: 23, gender: "Female", country: "North Korea", occupation: "Defector / Pickpocket", debt: 40000 },
+        stats: { strength: 5, agility: 7, intelligence: 9, charisma: 1, luck: 6, cowardice: 2, greed: 5 },
+        photoUrl: "https://static.wikia.nocookie.net/thesquidgame/images/f/f4/Kang_Sae-byeok.png/revision/latest?cb=20250916115418" 
+    },
+    95: { 
+        name: "Young-Mi", 
+        personality: { age: 25, gender: "Female", country: "South Korea", occupation: "Unemployed", debt: 25000 },
+        stats: { strength: 2, agility: 7, intelligence: 5, charisma: 3, luck: 3, cowardice: 8, greed: 1 },
+        photoUrl: "https://s.yimg.com/ny/api/res/1.2/Q65_OCPdL6TAYMYKJbLJjw--/YXBwaWQ9aGlnaGxhbmRlcjt3PTEyNDI7aD02OTk7Y2Y9d2VicA--/https://media.zenfs.com/en/mandatory_995/2f5b7e255575ae8da68b2ecf38f55f23" 
+    },
+    100: {
+        name: "Im Jeong-dae",
+        personality: { age: 29, gender: "Male", country: "South Korea", occupation: "Businessman", debt: 10000000 },
+        stats: { strength: 3, agility: 3, intelligence: 8, charisma: 15, luck: 8, cowardice: 8, greed: 13 },
+        photoUrl: "https://preview.redd.it/unpopular-opinion-i-think-player-100-was-one-of-the-v0-ieux3msf8ehf1.jpeg?auto=webp&s=6ce6586ac7aab1729a1d7ffe1d8f66f6b3fad4c3" 
+    },
+    101: { 
+        name: "Jang Deok-su", 
+        personality: { age: 44, gender: "Male", country: "South Korea", occupation: "Gangster", debt: 1200000 },
+        stats: { strength: 11, agility: 6, intelligence: 5, charisma: 8, luck: 6, cowardice: 2, greed: 10 },
+        photoUrl: "https://64.media.tumblr.com/800b77c51be892235c9ae3de67816d7e/95093e286c64ebfb-21/s540x810/15e869f7e9766a7068ee446efd2e0a7a96af7b73.gif" 
+    },
+    111: { 
+        name: "Byeon-gi", 
+        personality: { age: 44, gender: "Male", country: "South Korea", occupation: "Doctor", debt: 1100000 },
+        stats: { strength: 8, agility: 8, intelligence: 8, charisma: 8, luck: 6, cowardice: 3, greed: 10 },
+        photoUrl: "https://static.wikia.nocookie.net/thesquidgame/images/6/6f/Byeong-gi.png/revision/latest?cb=20240216074508" 
+    },
+    120: {
+        name: "Cho Hyun-Ju",
+        personality: { age: 38, gender: "Male", country: "South Korea", occupation: "Former Marine", debt: 330000 },
+        stats: { strength: 10, agility: 10, intelligence: 10, charisma: 6, luck: 5, cowardice: 0, greed: 3 },
+        photoUrl: "https://i.pinimg.com/236x/0a/c9/ae/0ac9ae623a2f70a0b61c613c4637fc78.jpg" 
+    },
+    124: {
+        name: "Nam-su",
+        personality: { age: 31, gender: "Male", country: "South Korea", occupation: "Security Guard", debt: 150000 },
+        stats: { strength: 6, agility: 6, intelligence: 5, charisma: 3, luck: 5, cowardice: 1, greed: 10 },
+        photoUrl: "https://static.wikia.nocookie.net/thesquidgame/images/d/df/Player124_n.jpg/revision/latest/thumbnail/width/360/height/450?cb=20250211122522" 
+    },
+    125: {
+        name: "Park Min-su",
+        personality: { age: 25, gender: "Male", country: "South Korea", occupation: "Office Worker", debt: 65000 },
+        stats: { strength: 3, agility: 8, intelligence: 5, charisma: 1, luck: 8, cowardice: 11, greed: 1 },
+        photoUrl: "https://i.pinimg.com/236x/68/47/4b/68474b21217a95102808aec76ffd6757.jpg" // FILLER URL
+    },
+    149: {
+        name: "Jang Geum-Ja",
+        personality: { age: 70, gender: "Female", country: "South Korea", occupation: "Midwife", debt: 0 },
+        stats: { strength: 2, agility: 5, intelligence: 7, charisma: 5, luck: 9, cowardice: 2, greed: 0 },
+        photoUrl: "https://static.wikia.nocookie.net/thesquidgame/images/5/52/JangGeum-ja.png/revision/latest?cb=20250103030318" 
+    },
+    199: { 
+        name: "Ali Abdul", 
+        personality: { age: 33, gender: "Male", country: "Pakistan", occupation: "Factory Worker", debt: 5000 },
+        stats: { strength: 10, agility: 7, intelligence: 6, charisma: 9, luck: 4, cowardice: 5, greed: 1 },
+        photoUrl: "https://upload.wikimedia.org/wikipedia/en/thumb/b/bd/Ali_Abdul_Squid_Game.jpg/250px-Ali_Abdul_Squid_Game.jpg" 
+    },
+    212: { 
+        name: "Han Mi-nyeo", 
+        personality: { age: 46, gender: "Female", country: "South Korea", occupation: "Fraudster", debt: 200000 },
+        stats: { strength: 4, agility: 8, intelligence: 6, charisma: 9, luck: 9, cowardice: 2, greed: 7 },
+        photoUrl: "https://upload.wikimedia.org/wikipedia/en/2/2a/Han_Mi-nyeo.png" 
+    },
+    218: { 
+        name: "Cho Sang-woo", 
+        personality: { age: 46, gender: "Male", country: "South Korea", occupation: "Head of Securities", debt: 4700000 },
+        stats: { strength: 6, agility: 6, intelligence: 11, charisma: 3, luck: 8, cowardice: 2, greed: 11 },
+        photoUrl: "https://static.wikia.nocookie.net/thesquidgame/images/8/8f/Sang-woo_during_red_light_green_light.jpg/revision/latest/scale-to-width-down/736?cb=20250105033101" 
+    },
+    222: {
+        name: "Kim Jun-hee",
+        personality: { age: 28, gender: "Female", country: "South Korea", occupation: "Unemployed", debt: 100000 },
+        stats: { strength: 3, agility: 5, intelligence: 5, charisma: 4, luck: 5, cowardice: 6, greed: 1 },
+        photoUrl: "https://static.wikia.nocookie.net/thesquidgame/images/c/c5/Player222.jpg/revision/latest/scale-to-width-down/250?cb=20241110155810"
+    },
+    226: { 
+        name: "Kim Yeong-Sam", 
+        personality: { age: 46, gender: "Male", country: "South Korea", occupation: "Employed", debt: 1900000 },
+        stats: { strength: 6, agility: 8, intelligence: 7, charisma: 9, luck: 5, cowardice: 2, greed: 10 },
+        photoUrl: "https://static.wikia.nocookie.net/thesquidgame/images/5/5a/KimYeong-sam1.png/revision/latest?cb=20241229032549" 
+    },
+    230: {
+        name: "Thanos",
+        personality: { age: 24, gender: "Male", country: "South Korea", occupation: "Rapper", debt: 75000 },
+        stats: { strength: 5, agility: 6, intelligence: 7, charisma: 9, luck: 6, cowardice: 4, greed: 8 },
+        photoUrl: "https://static.wikia.nocookie.net/thesquidgame/images/8/88/Thanos_Player_Picture.jpg/revision/latest/thumbnail/width/360/height/450?cb=20250528110557" 
+    },
+    333: {
+        name: "Lee Myung-gi",
+        personality: { age: 49, gender: "Male", country: "South Korea", occupation: "YouTuber", debt: 800000 },
+        stats: { strength: 7, agility: 7, intelligence: 9, charisma: 1, luck: 7, cowardice: 0, greed: 10 },
+        photoUrl: "https://cdn.polyspeak.ai/speakmaster/9e6636f6fee739075903b5196b8bd7ae.webp"
+    },
+    380: { 
+        name: "Han Se-Mi", 
+        personality: { age: 25, gender: "Female", country: "South Korea", occupation: "Makeup Artist", debt: 200000 },
+        stats: { strength: 4, agility: 8, intelligence: 6, charisma: 7, luck: 3, cowardice: 2, greed: 5 },
+        photoUrl: "https://preview.redd.it/opinions-on-380-v0-h0zkrchy899e1.jpeg?auto=webp&s=1fc0904560bbd8156edbe7346884cab0a26e4f56" 
+    },
+    388: {
+        name: "Kang Dae-Ho",
+        personality: { age: 34, gender: "Male", country: "South Korea", occupation: "Unemployed", debt: 45000 },
+        stats: { strength: 6, agility: 7, intelligence: 5, charisma: 6, luck: 5, cowardice: 10, greed: 3 },
+        photoUrl: "https://static.wikia.nocookie.net/thesquidgame/images/d/d3/DaeHo388.png/revision/latest/scale-to-width-down/250?cb=20250705181447" // FILLER URL
+    },
+    390: {
+        name: "Park Jung-bae",
+        personality: { age: 41, gender: "Male", country: "South Korea", occupation: "Small Business Owner", debt: 110000 },
+        stats: { strength: 6, agility: 6, intelligence: 8, charisma: 9, luck: 6, cowardice: 1, greed: 2 },
+        photoUrl: "https://shapes.inc/api/public/avatar/parkjungbae" // FILLER URL
+    },
+    456: { 
+        name: "Seong Gi-hun", 
+        personality: { age: 47, gender: "Male", country: "South Korea", occupation: "Chauffeur (Unemployed)", debt: 340000 },
+        stats: { strength: 7, agility: 8, intelligence: 6, charisma: 7, luck: 15, cowardice: 1, greed: 1 },
+        photoUrl: "https://upload.wikimedia.org/wikipedia/en/c/c1/Seong_Gi-hun_season_1.png" 
+    }
+};
+
+
+
+
+
+
+// NEW: Manual Easter Egg character data (merged)
+const manualEasterEggData = {
+    1: easterEggPlayersData[1], // Uses the resolver
+    7: { // Using explicit ID slot for non-sequential character
+        name: "Park Yong-sik",
+        personality: { age: 39, gender: "Male", country: "South Korea", occupation: "Unemployed", debt: 210000 },
+        stats: { strength: 5, agility: 4, intelligence: 5, charisma: 2, luck: 5, cowardice: 11, greed: 3 },
+        photoUrl: easterEggPlayersData[7].photoUrl
+    },
+    44: easterEggPlayersData[44],
+    67: easterEggPlayersData[67],
+    95: easterEggPlayersData[95],
+    100: easterEggPlayersData[100],
+    101: easterEggPlayersData[101],
+    111: easterEggPlayersData[111],
+    120: easterEggPlayersData[120],
+    124: easterEggPlayersData[124],
+    125: easterEggPlayersData[125],
+    149: easterEggPlayersData[149],
+    199: easterEggPlayersData[199],
+    212: easterEggPlayersData[212],
+    218: easterEggPlayersData[218],
+    222: easterEggPlayersData[222],
+    226: easterEggPlayersData[226],
+    230: easterEggPlayersData[230],
+    333: easterEggPlayersData[333],
+    380: easterEggPlayersData[380],
+    388: easterEggPlayersData[388],
+    390: easterEggPlayersData[390],
+    456: easterEggPlayersData[456]
+};
+
+let usedEasterEggIds = new Set();
+
+
+
+function initAudio() {
+    if (!audioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    }
+}
+document.body.addEventListener('click', initAudio, { once: true });
+
+function playSound(type) {
+    if (!audioContext) return;
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+
+    switch (type) {
+        case 'start':
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(440, audioContext.currentTime);
+            gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + 0.5);
+            break;
+        case 'elimination':
+            oscillator.type = 'square';
+            oscillator.frequency.setValueAtTime(150, audioContext.currentTime);
+            gainNode.gain.setValueAtTime(0.08, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + 0.2);
+            break;
+        case 'win':
+            oscillator.type = 'triangle';
+            oscillator.frequency.setValueAtTime(523, audioContext.currentTime);
+            gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + 1.0);
+            break;
+        case 'click':
+                oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(880, audioContext.currentTime);
+            gainNode.gain.setValueAtTime(0.05, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + 0.1);
+            break;
+    }
+    oscillator.start();
+    oscillator.stop(audioContext.currentTime + 1);
+}
+
+// --- Centralized Function to Get Active Players ---
+function getActivePlayers() {
+    return players.filter(p => !p.eliminated && !p.votedOut && !p.isBaby);
+}
+
+function createSaveObject() {
+        return {
+        // NEW: Add this line to save photos
+        customPlayerPhotos: customPlayerPhotos,
+        // Core Game State
+        players: players,
+        round: round,
+        currentGameNumber: currentGameNumber,
+        currentPrizePot: currentPrizePot,
+        firstEliminationOfGame: firstEliminationOfGame,
+
+
+        // Player Groupings (converted from Sets to Arrays)
+        personalityPlayers: Array.from(personalityPlayers),
+        superpoweredPlayerIds: Array.from(superpoweredPlayerIds),
+        usedEasterEggIds: Array.from(usedEasterEggIds),
+        favoritedPlayerIds: Array.from(favoritedPlayerIds), 
+
+        // UI & Mode Toggles
+        eliminatedHidden: eliminatedHidden,
+        showGroups: showGroups,
+        season2ModeActive: season2ModeActive,
+        showVoteColors: showVoteColors,
+        
+        // Season 2 / Voting
+        votingRoundCount: votingRoundCount,
+
+        // Alliances & Relations
+        allianceGroupColors: allianceGroupColors,
+
+        // History & Tracking
+        eliminationOrder: eliminationOrder,
+        allGamesHistory: allGamesHistory, // For winner history
+        gameHistorySnapshots: gameHistorySnapshots,
+        
+        // VIP / Betting
+        bettingBalance: bettingBalance,
+        isGameModified: isGameModified,
+        currentBets: currentBets,
+
+        // Events
+        usedEvents: Array.from(usedEvents),
+        
+        // Game Creator
+        customGames: customGames,
+
+        // VIP Player
+        isPlayer001VIP: isPlayer001VIP,
+        player001VIP_Id: player001VIP_Id,
+
+        // Achievements
+        achievements: achievements,
+    };
+}
+
+// --- NEW: SAVE/LOAD FUNCTIONS ---
+
+function saveGame() {
+    if (isViewingArchivedGame) {
+        alert("Cannot save while viewing an archived game. Please return to the live session first.");
+        return;
+    }
+    if (isViewingHistory) {
+        alert("Please 'Return to Live' before saving the game state.");
+        return;
+    }
+
+    const saveData = createSaveObject();
+
+    try {
+        const dataStr = JSON.stringify(saveData);
+        const dataBlob = new Blob([dataStr], {type: "application/json"});
+        
+        const url = URL.createObjectURL(dataBlob);
+        const a = document.createElement('a');
+        const timestamp = new Date().toISOString().replace(/:/g, '-').slice(0, 19);
+        a.href = url;
+        a.download = `squid-game-save-${timestamp}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        logEvent("Game state saved successfully.");
+    } catch (error) {
+        console.error("Error saving game:", error);
+        alert("Could not save game state. There might be a data issue. Check the console for details.");
+    }
+}
+
+function loadGame(event) {
+    const file = event.target.files[0];
+    if (!file) {
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const loadedData = JSON.parse(e.target.result);
+            restoreGameState(loadedData);
+            // logEvent is cleared by restore, so alert is better
+            alert("Game state loaded successfully.");
+
+        } catch (error) {
+            alert("Failed to load game state. The file may be corrupted or invalid.");
+            console.error("Error loading game:", error);
+        } finally {
+            // Reset file input to allow loading the same file again
+            event.target.value = '';
+        }
+    };
+    reader.readAsText(file);
+}
+
+// --- END SAVE/LOAD ---
+
+// --- NEW Favorite Player Functions ---
+function toggleFavoritePlayer(playerId) {
+    if (isViewingArchivedGame) {
+        alert("Cannot change favorites while viewing an archived game.");
+        return;
+    }
+    if (isViewingHistory) {
+        alert("Cannot change favorites while viewing history. Please Return to Live.");
+        return;
+    }
+    const player = players.find(p => p.id === playerId);
+    if (!player) return;
+
+    player.isFavorite = !player.isFavorite;
+
+    if (player.isFavorite) {
+        favoritedPlayerIds.add(playerId);
+    } else {
+        favoritedPlayerIds.delete(playerId);
+    }
+    
+    // Refresh UI
+    updateFavoritedPlayersList();
+    updateAllPlayerDivs(); // This updates the blip's highlight
+    showPlayerCard(playerId); // Re-opens/refreshes the card to show the new star state
+}
+
+function updateFavoritedPlayersList() {
+    const list = document.getElementById('favoritedPlayersList');
+    if (!list) return; // Guard for safety
+    list.innerHTML = '';
+
+    const currentPlayersArray = isViewingHistory 
+        ? gameHistorySnapshots[document.getElementById('historySlider').value].players
+        : players;
+    
+    // In history view, we must derive `isFavorite` status from the snapshot's data
+    const historicalFavoriteIds = new Set(
+        currentPlayersArray.filter(p => p.isFavorite).map(p => p.id)
+    );
+
+    historicalFavoriteIds.forEach(id => {
+        const p = currentPlayersArray.find(player => player.id === id);
+        if (p) {
+            let status;
+            if (p.votedOut) {
+                let reason = p.roundVotedOut === 'Escaped' ? 'Escaped' : `VR ${p.roundVotedOut || 'N/A'}`;
+                status = `Out (${reason})`;
+            } else if (p.eliminated) {
+                status = `Eliminated (GR ${p.eliminationRound || 'N/A'})`;
+            } else {
+                status = 'In Game';
+            }
+
+            const nameDisplay = p.name ? `(${p.name})` : '';
+            const li = document.createElement('li');
+            li.innerHTML = `${createPlayerLink(p.id)} ${nameDisplay} - <i>${status}</i>`;
+            list.appendChild(li);
+        }
+    });
+}
+
+// Centralized function to update lists in the personality tab
+function updateAllCustomLists() {
+    updateAllPersonalityLists();
+    updateFavoritedPlayersList();
+}
+
+
+// --- END Favorite Player Functions ---
+
+// NEW: Centralized function to credit a player for an elimination
+function creditElimination(killerId, victimId) {
+    if (!killerId) return;
+    const killer = players.find(p => p.id === killerId);
+    if (killer) {
+        if (!killer.eliminationsByPlayer) killer.eliminationsByPlayer = 0;
+        killer.eliminationsByPlayer++;
+    }
+}
+
+// NEW: Centralized function to update a player's highest ally count
+function updateHighestAllyCount(player) {
+    if (!player) return;
+    if (!player.highestAllyCount) player.highestAllyCount = 0;
+    const currentAllyCount = player.allies ? player.allies.length : 0;
+    if (currentAllyCount > player.highestAllyCount) {
+        player.highestAllyCount = currentAllyCount;
+    }
+}
+
+function getEffectiveStat(p, stat) {
+    let baseValue = p.baseStats[stat] || 0;
+    let boostValue = p.allianceBoost[stat] || 0;
+    let effectiveStat = baseValue + boostValue;
+
+    if (p.injury) {
+        if (stat === 'strength' || stat === 'agility') {
+            effectiveStat -= 2;
+        }
+        if (stat === 'cowardice') {
+            effectiveStat += p.injury.cowardiceDebuff;
+        }
+    }
+
+    if (stat === 'cowardice' || stat === 'greed' || stat === 'debt') {
+        return effectiveStat; 
+    }
+    
+    return Math.max(1, effectiveStat);
+};
+
+function getWeightedRandom(array, weights) {
+    if (array.length === 0) return null;
+    let sum = 0;
+    const cumulativeWeights = weights.map(w => sum += w);
+    const random = Math.random() * sum;
+    const index = cumulativeWeights.findIndex(weight => weight > random);
+    return array[index];
+}
+function getDebt() {
+    const ranges = [
+        { max: 100000, w: 50 },
+        { max: 500000, w: 30 },
+        { max: 2000000, w: 15 },
+        { max: 10000000, w: 5 }
+    ];
+    const range = getWeightedRandom(ranges, ranges.map(r => r.w));
+    return Math.floor(Math.random()*(range.max-1000))+1000;
+}
+function formatPlayerNumber(num) { return num.toString().padStart(3, '0'); }
+function formatCurrency(amount) { 
+    const prefix = '$';
+    return prefix + amount.toLocaleString('en-US'); 
+}
+
+function createPlayerLink(playerId) {
+    return `<span class="player-link" onclick="showPlayerCard(${playerId})">P${formatPlayerNumber(playerId)}</span>`;
+}
+
+function linkifyPlayerNumbers(text) {
+    if (!text) return '';
+    return text.replace(/\bP(\d{1,3})\b/g, (match, p1) => {
+        const id = parseInt(p1, 10);
+        const currentPlayersArray = (isViewingHistory || isViewingArchivedGame) && gameHistorySnapshots.length > 0
+            ? gameHistorySnapshots[document.getElementById('historySlider').value].players
+            : players;
+        const playerExists = currentPlayersArray.some(p => p.id === id);
+        if (playerExists) {
+            return createPlayerLink(id);
+        }
+        return match;
+    });
+}
+
+function logEvent(message, details = null) {
+    const logList = document.getElementById('gameLogList');
+    const listItem = document.createElement('li');
+    
+    let html = message;
+    if (details) {
+        const detailId = `details-log-${Date.now()}-${Math.random()}`;
+        html += ` <button class="log-details-toggle" onclick="toggleLogDetails('${detailId}')">View Details</button>`;
+        html += `<div class="expandable" id="${detailId}">${linkifyPlayerNumbers(details)}</div>`;
+    }
+
+    listItem.innerHTML = linkifyPlayerNumbers(html);
+    logList.appendChild(listItem);
+    logList.scrollTop = logList.scrollHeight;
+}
+
+function toggleLogDetails(detailId) {
+    const detailBox = document.getElementById(detailId);
+    if (detailBox) {
+        detailBox.style.display = detailBox.style.display === 'none' ? 'block' : 'none';
+    }
+}
+
+function setGameAsModified() {
+    if (!isGameModified) {
+        isGameModified = true;
+        updateVipTab();
+    }
+}
+
+function toggleSeason2Mode() {
+    if (isViewingArchivedGame) return;
+    season2ModeActive = !season2ModeActive;
+    const toggleBtn = document.getElementById('season2ToggleBtnInTab');
+    
+    // Update the button's text and style
+    toggleBtn.textContent = season2ModeActive ? 'Voting Mode is ON' : 'Voting Mode is OFF';
+    toggleBtn.style.backgroundColor = season2ModeActive ? '#28a745' : '';
+    toggleBtn.style.color = season2ModeActive ? 'white' : '';
+
+    // Disable voting actions if mode is turned off
+    document.querySelector('#votingBox button[onclick="startVotingRound()"]').disabled = !season2ModeActive;
+    document.getElementById('toggleVoteColorsBtn').disabled = !season2ModeActive;
+    
+    if (!season2ModeActive) {
+        showVoteColors = false; 
+        document.getElementById('toggleVoteColorsBtn').innerText = "Show Vote Colors";
+        clearVoteColorsFromPlayers();
+    }
+    updateAllPlayerDivs();
+    updateStatistics(); 
+}
+
+function toggleVoteColors() {
+    if (isViewingArchivedGame) return;
+    if (!season2ModeActive) { alert("Season 2 Mode is not active."); return; }
+    showVoteColors = !showVoteColors;
+    document.getElementById('toggleVoteColorsBtn').innerText = showVoteColors ? "Hide Vote Colors" : "Show Vote Colors";
+    updateAllPlayerDivs();
+}
+
+function toggleGroupView() {
+    // if (isViewingArchivedGame) return; // REMOVED THIS LINE
+    showGroups = !showGroups;
+    document.getElementById('toggleGroupBtn').innerText = showGroups ? "Hide Groups" : "Show Groups";
+    updateAllPlayerDivs();
+}
+
+
+function clearVoteColorsFromPlayers() {
+    players.forEach(player => {
+        const playerDiv = document.getElementById(`player-${player.id}`);
+        if (playerDiv) playerDiv.classList.remove('voted-o', 'voted-x');
+    });
+}
+
+function calculateGridPositions(playersToLayout) {
+gridPositions = {}; // Always clear old positions
+const numPlayers = playersToLayout.length;
+
+// --- Layout parameters (Constants from original code) ---
+const DIAMOND_SIZE = 36;
+const DIAMOND_GAP = 8;
+const X_STEP = DIAMOND_SIZE + DIAMOND_GAP;
+const Y_STEP = (DIAMOND_SIZE + DIAMOND_GAP) / 2;
+const BORDER_PADDING = 40;
+// --------------------------------------------------------
+
+let widestRow = Math.ceil(Math.sqrt(numPlayers));
+let totalRows = widestRow * 2 - 1;
+
+let playersContainer = document.getElementById('players');
+let containerWidth = (widestRow * X_STEP) + BORDER_PADDING;
+let containerHeight = (totalRows * Y_STEP) + BORDER_PADDING;
+playersContainer.style.width = containerWidth + 'px';
+playersContainer.style.height = containerHeight + 'px';
+
+let currentPlayerIndex = 0; // Tracks the position index in the new layout
+
+for (let r = 1; r <= totalRows; r++) {
+    let numColsInRow = r <= widestRow ? r : widestRow * 2 - r;
+    for (let c = 1; c <= numColsInRow; c++) {
+        if (currentPlayerIndex >= numPlayers) break;
+        
+        // Get the player whose blip will occupy this position
+        const player = playersToLayout[currentPlayerIndex];
+        
+        const yPos = (r - 1) * Y_STEP + Y_STEP;
+        const xPos = (containerWidth / 2) + (c - (numColsInRow + 1) / 2) * X_STEP;
+        
+        // Store position by actual player ID
+        gridPositions[player.id] = { x: xPos, y: yPos };
+        currentPlayerIndex++;
+    }
+        if (currentPlayerIndex >= numPlayers) break;
+}
+}
+
+
+function updateAllPlayerDivs() {
+const playersContainer = document.getElementById('players');
+playersContainer.innerHTML = ''; 
+
+// 1. Determine view mode and recalculate grid immediately
+let playersToDraw;
+if (isCompactedView) {
+    // Compact Mode: Only active players, tight grid
+    playersToDraw = getActivePlayers();
+    calculateGridPositions(playersToDraw);
+} else {
+    // Full/Restore Mode: All players (including eliminated), full grid
+    playersToDraw = players;
+    calculateGridPositions(players);
+}
+
+// 2. Setup colors if groups are active
+if (showGroups) {
+    allianceGroupColors = {}; 
+    let availableColors = [...allianceColors];
+    
+    const activeGroupIds = new Set();
+    const currentPlayersForGrouping = isViewingHistory || isViewingArchivedGame ? players : getActivePlayers();
+    
+    currentPlayersForGrouping.forEach(p => {
+        if (p.allies && p.allies.length > 0) {
+            const sortedAllies = [p.id, ...p.allies].sort((a,b) => a-b);
+            const groupId = sortedAllies.join('-');
+            activeGroupIds.add(groupId);
+        }
+    });
+    
+    for (const groupId in persistentGroupColors) {
+        if (!activeGroupIds.has(groupId)) {
+            delete persistentGroupColors[groupId];
+        }
+    }
+
+    Object.values(persistentGroupColors).forEach(color => {
+        const index = availableColors.indexOf(color);
+        if (index > -1) availableColors.splice(index, 1);
+    });
+    
+    const getNextColor = () => {
+        if(availableColors.length === 0) availableColors = [...allianceColors]; 
+        return availableColors.shift();
+    };
+
+    activeGroupIds.forEach(groupId => {
+        if (!persistentGroupColors[groupId]) {
+            persistentGroupColors[groupId] = getNextColor();
+        }
+        allianceGroupColors[groupId] = persistentGroupColors[groupId];
+    });
+}
+
+// 3. Draw the players based on the mode
+// NOTE: We iterate through playersToDraw, so in compact mode, eliminated players aren't even processed.
+playersToDraw.sort((a, b) => a.id - b.id).forEach(p => {
+    let playerDiv = document.createElement('div');
+    playerDiv.id = `player-${p.id}`;
+    
+    const photoURL = customPlayerPhotos[p.id];
+    let numberClasses = [];
+    
+    if (photoURL) {
+        const desiredImageRotation = '-135deg'; 
+        
+        const imageContent = `
+            <div class="player-image-container">
+                <img src="${photoURL}" style="transform: rotate(${desiredImageRotation});">
+            </div>
+        `;
+        playerDiv.innerHTML = imageContent;
+        numberClasses.push('player-text-shadow');
+        playerDiv.style.backgroundColor = 'transparent';
+        playerDiv.style.backgroundImage = 'none'; 
+    } else {
+        playerDiv.innerHTML = '';
+        playerDiv.style.backgroundImage = 'none';
+    }
+    
+    const numberContent = p.isBaby
+        ? `<span class="player-baby-icon">👶</span>`
+        : `<span class="player-number ${numberClasses.join(' ')}">${formatPlayerNumber(p.id)}</span>`;
+    
+    playerDiv.innerHTML += numberContent;
+
+    // 4. Positioning (using the map we just recalculated in Step 1)
+    if (gridPositions[p.id]) {
+        playerDiv.style.top = gridPositions[p.id].y + 'px';
+        playerDiv.style.left = gridPositions[p.id].x + 'px';
+    }
+    
+    // 5. Setup event listeners
+    playerDiv.onmouseenter = (e) => {
+        showPlayerTooltip(p.id, e);
+        if (showGroups && p.allies && p.allies.length > 0) {
+            const group = [p.id, ...p.allies];
+            group.forEach(allyId => {
+                const allyDiv = document.getElementById(`player-${allyId}`);
+                if(allyDiv) allyDiv.classList.add('group-highlight');
+            });
+        }
+    };
+    playerDiv.onmouseleave = () => {
+        hidePlayerTooltip();
+        if (showGroups && p.allies && p.allies.length > 0) {
+            const group = [p.id, ...p.allies];
+            group.forEach(allyId => {
+                const allyDiv = document.getElementById(`player-${allyId}`);
+                if(allyDiv) allyDiv.classList.remove('group-highlight');
+            });
+        }
+    };
+    playerDiv.onclick = () => showPlayerCard(p.id);
+
+    // 6. Apply classes and colors
+    let classes = ['player'];
+    playerDiv.style.backgroundColor = ''; 
+    playerDiv.style.boxShadow = '';
+
+    if (p.votedOut) {
+        classes.push('voted-out');
+        if (isPlayer001VIP && p.id === player001VIP_Id) {
+            classes.push('player-vip-eliminated');
+        }
+    } else if (p.eliminated) {
+        if (p.wasFinalistWhenEliminated) {
+            classes.push('eliminated-finalist');
+        } else if (p.isPreviousWinner) {
+            classes.push('purple');
+        } else if (isPlayer001VIP && p.id === player001VIP_Id) {
+            classes.push('player-vip-eliminated');
+        } else if (superpoweredPlayerIds.has(p.id) || personalityPlayers.has(p.id)) {
+            classes.push('purple');
+        } else {
+            classes.push('eliminated');
+        }
+    } else { // Player is Active
+        if (p.caretakerFor) { 
+            classes.push('player-caretaker');
+        } else if (p.isPreviousWinner) {
+            classes.push('purple');
+        } else if (p.isEasterEgg) {
+            classes.push('player-easter-egg');
+        }
+        if (p.isWinner) {
+            classes.push('winner');
+        } else if (p.isFinalist) {
+            classes.push('finalist');
+        } else if (showVoteColors && season2ModeActive && p.currentVote) {
+            classes.push(p.currentVote === 'O' ? 'voted-o' : 'voted-x');
+        } else if (!p.isEasterEgg && (superpoweredPlayerIds.has(p.id) || personalityPlayers.has(p.id))) {
+            classes.push('dark-pink');
+        }
+
+        if (p.injury) {
+            playerDiv.style.boxShadow = '0 0 10px 3px red';
+        }
+
+        if (isPlayer001VIP && p.id === player001VIP_Id) {
+            classes.push('player-vip');
+        }
+
+        if (p.isPregnant) {
+            classes.push('player-pregnant');
+        }
+    }
+
+    if (showGroups && !p.eliminated && !p.votedOut) {
+        const hasAllies = p.allies && p.allies.length > 0;
+        
+        if(hasAllies) {
+            const sortedAllies = [p.id, ...p.allies].sort((a,b) => a-b);
+            const groupId = sortedAllies.join('-');
+            if (!p.caretakerFor) {
+                playerDiv.style.backgroundColor = allianceGroupColors[groupId] || '';
+            }
+        } 
+        // APPLY FADING: If showGroups is on, the player is active, they have NO allies, AND we are NOT in compact mode (full view).
+        if (!hasAllies && !isCompactedView) {
+            classes.push('faded-group-view');
+        }
+    }
+
+
+    
+    // 'hidden-eliminated' is only needed if we are NOT compacted (since compacted doesn't draw them anyway)
+    // and the separate "Hide Eliminated" toggle is ON.
+    if (!isCompactedView && (p.eliminated || p.votedOut) && eliminatedHidden) {
+        classes.push('hidden-eliminated');
+    }
+
+    if (p.isFavorite) {
+        classes.push('player-favorite-highlight');
+    }
+    playerDiv.className = classes.join(' ');
+    playersContainer.appendChild(playerDiv);
+});
+}
+
+
+function toggleEliminatedVisibility() {
+    if (isViewingArchivedGame) return;
+    eliminatedHidden = !eliminatedHidden;
+    document.getElementById('toggleEliminatedBtn').innerText = eliminatedHidden ? 'Show Eliminated/Out' : 'Hide Eliminated/Out';
+    updateAllPlayerDivs();
+}
+
+function updateStatsBlock(containerId) {
+    const activePlayers = getActivePlayers();
+    const totalDebt = activePlayers.reduce((sum, p) => sum + p.debt, 0);
+    const averageDebt = activePlayers.length > 0 ? totalDebt / activePlayers.length : 0;
+    
+    const sortedByDebt = [...activePlayers].sort((a, b) => b.debt - a.debt);
+    let mostDebtPlayerHTML = 'N/A';
+    if (sortedByDebt.length > 0) {
+        const player = sortedByDebt[0];
+        mostDebtPlayerHTML = `${createPlayerLink(player.id)} (${formatCurrency(player.debt)})`;
+    }
+
+    let html = `<p><strong>Current Prize Pot:</strong> <span id="statsPrizePot${containerId}">${formatCurrency(currentPrizePot)}</span></p>
+                <p><strong>Total Debt:</strong> ${formatCurrency(totalDebt)}</p>
+                <p><strong>Average Debt:</strong> ${formatCurrency(Math.round(averageDebt))}</p>
+                <p><strong>Remaining Players:</strong> <span id="statsPlayersRemaining${containerId}">${activePlayers.length}</span></p>
+                <p><strong>Male Players:</strong> <span id="statsMale${containerId}">${activePlayers.filter(p => p.gender === 'Male').length}</span></p>
+                <p><strong>Female Players:</strong> <span id="statsFemale${containerId}">${activePlayers.filter(p => p.gender === 'Female').length}</span></p>
+                <p><strong>Current Round:</strong> <span id="statsCurrentRound${containerId}">${round}</span></p>`;
+    if (season2ModeActive) {
+        html += `<div id="s2Stats${containerId}">
+                    <p><strong>Voted 'O' (Stay):</strong> <span id="statsVotedO${containerId}">${activePlayers.filter(p => p.currentVote === 'O').length}</span></p>
+                    <p><strong>Voted 'X' (Leave):</strong> <span id="statsVotedX${containerId}">${activePlayers.filter(p => p.currentVote === 'X').length}</span></p>
+                </div>`;
+    }
+        html += `<h4>Leaderboards</h4>
+            <div id="leaderboards${containerId}">
+                <p><strong>Most Kills:</strong> <span id="leaderboardKills${containerId}">N/A</span></p>
+                <p><strong>Most Feared:</strong> <span id="leaderboardFeared${containerId}">N/A</span></p>
+                <p><strong>Most Respected:</strong> <span id="leaderboardRespected${containerId}">N/A</span></p>
+                <p><strong>Most Debt:</strong> ${mostDebtPlayerHTML}</p>
+                <p><strong>Weakest Player:</strong> <span id="leaderboardWeakest${containerId}">N/A</span></p>
+            </div>`;
+    document.getElementById(containerId).innerHTML = html;
+    updateLeaderboards(containerId);
+}
+
+function updateStatistics() {
+    updateStatsBlock('statisticsContent');
+    if (season2ModeActive) {
+        updateStatsBlock('votingStatsContent');
+    }
+}
+
+function getPlayerFearScore(p) {
+    return (getEffectiveStat(p, 'strength') + getEffectiveStat(p, 'agility') + getEffectiveStat(p, 'intelligence') + getEffectiveStat(p, 'charisma') + getEffectiveStat(p, 'luck') + getEffectiveStat(p, 'greed')) - getEffectiveStat(p, 'cowardice');
+}
+
+function updateLeaderboards(containerId = 'statisticsContent') {
+    const activePlayers = getActivePlayers();
+    const killsEl = document.getElementById(`leaderboardKills${containerId}`);
+    const fearedEl = document.getElementById(`leaderboardFeared${containerId}`);
+    const respectedEl = document.getElementById(`leaderboardRespected${containerId}`);
+    const weakestEl = document.getElementById(`leaderboardWeakest${containerId}`);
+
+    if (activePlayers.length === 0 || !fearedEl) {
+            if(fearedEl) {
+            fearedEl.innerHTML = 'N/A';
+            respectedEl.innerHTML = 'N/A';
+            weakestEl.innerHTML = 'N/A';
+            }
+            if(killsEl) killsEl.innerHTML = 'N/A';
+        return;
+    }
+    
+    // Kills Leaderboard (considers all players, alive or dead)
+    const allPlayersWithKills = players.filter(p => (p.eliminationsByPlayer || 0) > 0);
+    allPlayersWithKills.sort((a,b) => (b.eliminationsByPlayer || 0) - (a.eliminationsByPlayer || 0));
+    killsEl.innerHTML = allPlayersWithKills.length > 0
+        ? allPlayersWithKills.slice(0, 3).map(p => `${createPlayerLink(p.id)} (${p.eliminationsByPlayer})`).join(', ') 
+        : 'N/A';
+
+    // Other leaderboards (active players only)
+    const sortedByFear = [...activePlayers].sort((a,b) => getPlayerFearScore(b) - getPlayerFearScore(a));
+    const sortedByRespect = [...activePlayers].sort((a,b) => (getEffectiveStat(b, 'charisma') + getEffectiveStat(b, 'intelligence')) - (getEffectiveStat(a, 'charisma') + getEffectiveStat(a, 'intelligence')));
+    const sortedByWeakness = [...activePlayers].sort((a,b) => ((getEffectiveStat(b,'cowardice') * 1.5) - (getEffectiveStat(b,'strength') + getEffectiveStat(b,'luck') + getEffectiveStat(b,'intelligence'))) - ((getEffectiveStat(a,'cowardice') * 1.5) - (getEffectiveStat(a,'strength') + getEffectiveStat(a,'luck') + getEffectiveStat(a,'intelligence'))));
+    
+    fearedEl.innerHTML = sortedByFear.slice(0, 3).map(p => createPlayerLink(p.id)).join(', ');
+    respectedEl.innerHTML = sortedByRespect.slice(0, 3).map(p => createPlayerLink(p.id)).join(', ');
+    weakestEl.innerHTML = sortedByWeakness.slice(0, 1).map(p => createPlayerLink(p.id)).join('');
+}
+
+
+function showPlayerTooltip(playerId, event) {
+    const player = players.find(p => p.id === playerId);
+    if (!player) return;
+    const tooltip = document.getElementById('playerTooltip');
+    let info = `Player ${formatPlayerNumber(playerId)}`;
+    if (player.name) info += ` (${player.name})`;
+    info += "\n(Click player diamond for dossier)\n";
+
+    if (player.isPreviousWinner) info += "[Previous Winner]\n";
+    if (player.isEasterEgg) info += "[Special Character]\n";
+    if (isPlayer001VIP && player.id === player001VIP_Id) info += "[VIP Player]\n";
+    if (player.caretakerFor) info += `[Caretaker for P${formatPlayerNumber(player.caretakerFor)}]\n`;
+    if (player.isBaby) info += `[Has Caretaker: P${formatPlayerNumber(player.hasCaretaker)}]\n`;
+    if (player.isPregnant) info += "[Pregnant]\n";
+    
+    if (player.injury) {
+        info += `Status: INJURED (${player.injury.type}, ${player.injury.roundsRemaining} round${player.injury.roundsRemaining > 1 ? 's' : ''} left)\n`;
+    } else if (player.votedOut) {
+        let reason = player.roundVotedOut === 'Escaped' ? 'Escaped' : `VR ${player.roundVotedOut || 'N/A'}`;
+        info += `Status: Out of Game (${reason})\n`;
+    } else if (player.eliminated) {
+        info += `Status: Eliminated (GR ${player.eliminationRound || 'N/A'})\n`;
+    } else {
+        info += `Status: Still in game\n`;
+    }
+    
+    info += `Protection: ${player.protection}\n`;
+    if (player.hasHint) info += `Hinted for Next Game\n`;
+    
+    tooltip.innerHTML = info.replace(/\n/g, '<br>');
+    tooltip.style.display = 'block';
+    tooltip.style.left = (event.pageX + 10) + 'px';
+    tooltip.style.top = (event.pageY + 10 - window.scrollY) + 'px';
+}
+
+function hidePlayerTooltip() { document.getElementById('playerTooltip').style.display = 'none'; }
+
+function updateEventButtons() {
+    const eventButtons = document.querySelectorAll('#events-controls button');
+    eventButtons.forEach(button => {
+        const eventName = button.id.split('-')[1];
+        if (eventName !== 'random') {
+            button.disabled = usedEvents.has(eventName) || isViewingArchivedGame;
+        }
+    });
+}
+
+function clearAdvancedSettings() {
+    document.getElementById('advCountry').value = '';
+    document.getElementById('advFemaleCount').value = ''; // CHANGED
+    document.getElementById('advMaleCount').value = '';
+    document.getElementById('advAgeMin').value = '';
+    document.getElementById('advAgeMax').value = '';
+    ['Str', 'Agi', 'Int', 'Cha', 'Lck', 'Cow', 'Grd'].forEach(trait => {
+        document.getElementById(`adv${trait}Min`).value = '';
+        document.getElementById(`adv${trait}Max`).value = '';
+    });
+}
+
+
+function startGame(isAdvancedGame = false) { // CHANGED: Added parameter
+    if (isViewingArchivedGame) return;
+    
+    if(isAdvancedGame) { // CHANGED: Logic now depends on the button pressed
+        setGameAsModified();
+    }
+
+    playSound('start');
+    currentGameNumber++; 
+    isPlayer001VIP = false; 
+    player001VIP_Id = null;
+    currentPrizePot = 0;
+    firstEliminationOfGame = true;
+    usedEasterEggIds.clear();
+
+    // Feature Resets
+    forcedWinnerId = null; // NEW - Reset the forced winner
+    customPlayerPhotos = {}; // NEW - Clear photos on new game
+    favoritedPlayerIds.clear(); 
+    eliminationOrder = [];
+    gameHistorySnapshots = [];
+    isViewingHistory = false;
+    livePlayersState = null;
+    usedEvents.clear();
+    updateEventButtons();
+    document.getElementById('history-slider-container').style.display = 'none';
+
+
+    // --- VIP BETTING RESET ---
+    isGameModified = isAdvancedGame; // EXPLICITLY set the flag here
+    currentBets.forEach(bet => {
+
+        const oldBetPlayer = players.find(p => p.id === bet.playerId);
+        if (oldBetPlayer) oldBetPlayer.hasVipBet = false;
+    });
+    currentBets = [];
+    updateVipTab();
+    
+    unlockAchievement('newGame');
+
+    const numPlayersInput = parseInt(document.getElementById('numPlayers').value);
+    if (isNaN(numPlayersInput) || numPlayersInput < 2) { alert("Need at least 2 players."); return; }
+    
+    if(numPlayersInput >= 456 && !isAdvancedGame) unlockAchievement('fullHouse');
+    if(numPlayersInput >= 1000) unlockAchievement('megaGame');
+
+    players = []; round = 0; roundEliminations = []; personalityPlayers.clear(); superpoweredPlayerIds.clear();
+    eliminatedHidden = false; votingRoundCount = 0;
+    persistentGroupColors = {}; // NEW - Reset for new game
+playerGroupId = {};
+
+
+    
+    document.getElementById('toggleEliminatedBtn').innerText = 'Hide Eliminated/Out';
+    const pausePlayBtn = document.getElementById('pausePlayButton');
+    pausePlayBtn.innerText = 'Pause Animation'; pausePlayBtn.disabled = true;
+
+    if (animationTimeoutId) clearTimeout(animationTimeoutId); animationTimeoutId = null;
+    if (announcementTimeoutId) {
+        clearTimeout(announcementTimeoutId); announcementTimeoutId = null;
+        document.getElementById('eliminationAnnouncement').style.display = 'none';
+    }
+    animationPaused = false; playersToEliminateInAnimation = []; animatedEliminationIndex = 0;
+
+    const playersContainer = document.getElementById('players');
+    playersContainer.innerHTML = '';
+    calculateGridPositions(numPlayersInput);
+    
+    // NEW: Advanced Settings values
+    const advFemaleCount = document.getElementById('advFemaleCount').value; // CHANGED
+    const advMaleCount = document.getElementById('advMaleCount').value;
+    const advCountry = document.getElementById('advCountry').value.trim();
+    const advAgeMin = document.getElementById('advAgeMin').value;
+    const advAgeMax = document.getElementById('advAgeMax').value;
+
+    // NEW: Overhauled gender calculation
+    let numFemales = 0;
+    let numMales = 0;
+
+    if (advFemaleCount !== '' && !isNaN(advFemaleCount) || advMaleCount !== '' && !isNaN(advMaleCount)) {
+        numFemales = (advFemaleCount !== '' && !isNaN(advFemaleCount)) ? parseInt(advFemaleCount) : 0;
+        numMales = (advMaleCount !== '' && !isNaN(advMaleCount)) ? parseInt(advMaleCount) : 0;
+        const totalSpecified = numFemales + numMales;
+
+        // Adjust if the numbers don't add up to the total players
+        if (totalSpecified > numPlayersInput) {
+            const ratio = numPlayersInput / totalSpecified;
+            numFemales = Math.floor(numFemales * ratio);
+            numMales = numPlayersInput - numFemales; // Remainder goes to males
+        } else if (totalSpecified < numPlayersInput) {
+            // If numbers are too low, fill the rest randomly
+            const remaining = numPlayersInput - totalSpecified;
+            numMales += Math.ceil(remaining / 2);
+            numFemales = numPlayersInput - numMales;
+        }
+    } else {
+        // Default random logic if neither field is filled
+        const maxFemales = Math.floor(numPlayersInput / 2);
+        numFemales = Math.floor(Math.random() * (maxFemales + 1));
+        numMales = numPlayersInput - numFemales;
+    }
+
+
+    const genderPool = Array(numFemales).fill('Female').concat(Array(numMales).fill('Male'));
+    for (let i = genderPool.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [genderPool[i], genderPool[j]] = [genderPool[j], genderPool[i]];
+    }
+    
+    const getRandomInRange = (advMin, advMax, defaultMin, defaultMax) => {
+        const min = advMin !== '' && !isNaN(advMin) ? parseInt(advMin) : defaultMin;
+        const max = advMax !== '' && !isNaN(advMax) ? parseInt(advMax) : defaultMax;
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+    };
+
+    for (let i = 1; i <= numPlayersInput; i++) {
+        const gender = genderPool.pop() || (Math.random() < 0.5 ? 'Male' : 'Female');
+        const firstName = gender === "Male" ? firstNamesMale[Math.floor(Math.random() * firstNamesMale.length)] : firstNamesFemale[Math.floor(Math.random() * firstNamesFemale.length)];
+        const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
+
+        let newPlayer = {
+            id: i, eliminated: false, eliminationRound: null, 
+            votedOut: false, roundVotedOut: null, 
+            wasFinalistWhenEliminated: false, isWinner: false, isFinalist: false, confirmedFinalist: false,
+            isEasterEgg: false,
+            isPreviousWinner: false, 
+            isFavorite: false, 
+            age: getRandomInRange(advAgeMin, advAgeMax, 18, 80),
+            country: advCountry || countries[Math.floor(Math.random() * countries.length)],
+            occupation: getWeightedRandom(occupations, occupations.map(occ => (occ === "Unemployed" ? 10 : 1))), 
+            gender: gender, debt: getDebt(),
+            protection: 0, 
+            hasHint: false, 
+            firstName: firstName, lastName: lastName, name: `${firstName} ${lastName}`, nickname: null,
+            relation: null,
+            baseStats: {
+                strength: getRandomInRange(document.getElementById('advStrMin').value, document.getElementById('advStrMax').value, 1, 10),
+                agility: getRandomInRange(document.getElementById('advAgiMin').value, document.getElementById('advAgiMax').value, 1, 10),
+                intelligence: getRandomInRange(document.getElementById('advIntMin').value, document.getElementById('advIntMax').value, 1, 10),
+                charisma: getRandomInRange(document.getElementById('advChaMin').value, document.getElementById('advChaMax').value, 1, 10),
+                luck: getRandomInRange(document.getElementById('advLckMin').value, document.getElementById('advLckMax').value, 1, 10),
+                cowardice: getRandomInRange(document.getElementById('advCowMin').value, document.getElementById('advCowMax').value, 1, 10),
+                greed: getRandomInRange(document.getElementById('advGrdMin').value, document.getElementById('advGrdMax').value, 1, 10)
+            },
+            allianceBoost: { strength: 0, agility: 0, intelligence: 0, charisma: 0, luck: 0 },
+            voteHistory: [], currentVote: null, allies: [], enemies: [], 
+            injury: null,
+            actionLog: [],
+            hasVipBet: false, 
+            reachedTop10: false,
+            eliminationsByPlayer: 0,
+            highestAllyCount: 0,
+            isPregnant: false,
+            hasBaby: null,
+            isBaby: false,
+            hasCaretaker: null,
+            caretakerFor: null
+        };
+
+        if (easterEggPlayersData[i] && !usedEasterEggIds.has(i) && Math.random() < 0.05 && !isAdvancedGame) {
+            let eggData;
+            if (typeof easterEggPlayersData[i].resolve === 'function') {
+                eggData = easterEggPlayersData[i].resolve();
+            } else {
+                eggData = easterEggPlayersData[i];
+            }
+
+            // If a photo URL is defined, apply it automatically
+            if (eggData.photoUrl) {
+                customPlayerPhotos[i] = eggData.photoUrl;
+            }
+
+            newPlayer.name = eggData.name;
+            newPlayer.baseStats = { ...eggData.stats };
+
+            if (eggData.personality) {
+                Object.assign(newPlayer, eggData.personality);
+                if(eggData.personality.name) newPlayer.name = eggData.personality.name;
+                if(eggData.personality.firstName && eggData.personality.lastName) newPlayer.name = `${eggData.personality.firstName} ${eggData.personality.lastName}`;
+            }
+
+            newPlayer.protection = 1;
+            newPlayer.isEasterEgg = true;
+            usedEasterEggIds.add(i);
+
+            logEvent(`A special character has appeared! P${formatPlayerNumber(i)} is ${newPlayer.name}.`);
+            unlockAchievement('specialCharacter');
+        }
+        players.push(newPlayer);
+    }
+
+    // --- START NEW ROSTER SETUP (ADDITION) ---
+    originalRosterSize = numPlayersInput; // Track the initial number
+    isCompactedView = false; // Start in full view
+    // --- END NEW ROSTER SETUP ---
+
+    
+        if (Math.random() < 1/13 && !isAdvancedGame) {
+        const potentialMothers = players.filter(p => p.gender === 'Female' && p.age >= 18 && p.age <= 40 && !p.isEasterEgg && !p.isPreviousWinner);
+        if (potentialMothers.length > 0) {
+            const pregnantPlayer = potentialMothers[Math.floor(Math.random() * potentialMothers.length)];
+            pregnantPlayer.isPregnant = true;
+            pregnantPlayer.protection += 1;
+            superpoweredPlayerIds.add(pregnantPlayer.id);
+            logEvent(`${createPlayerLink(pregnantPlayer.id)} (${pregnantPlayer.name}) has entered the games while pregnant.`);
+        }
+    }
+
+    const loneWinners = allGamesHistory.filter(g => g.winnerId !== null);
+    if (loneWinners.length > 0 && Math.random() < 0.05 && !isAdvancedGame) {
+        const randomWinnerRecord = loneWinners[Math.floor(Math.random() * loneWinners.length)];
+        const winnerData = randomWinnerRecord.fullState.players.find(p => p.id === randomWinnerRecord.winnerId);
+        
+        if (winnerData) {
+            let replacedIndex = players.findIndex(p => p.id === winnerData.id);
+            let originalId = winnerData.id;
+
+            if (replacedIndex === -1) {
+                const nonSpecialPlayers = players.filter(p => !p.isEasterEgg && !p.isPreviousWinner && p.id > 10);
+                if (nonSpecialPlayers.length > 0) {
+                    const playerToReplace = nonSpecialPlayers[Math.floor(Math.random() * nonSpecialPlayers.length)];
+                    originalId = playerToReplace.id;
+                    replacedIndex = players.findIndex(p => p.id === originalId);
+                }
+            }
+            
+            if (replacedIndex !== -1) {
+                players[replacedIndex] = JSON.parse(JSON.stringify(winnerData));
+                
+                const returningWinner = players[replacedIndex];
+                returningWinner.id = originalId;
+                returningWinner.eliminated = false;
+                returningWinner.votedOut = false;
+                returningWinner.isWinner = false;
+                returningWinner.isFinalist = false;
+                returningWinner.protection = 3;
+                returningWinner.isPreviousWinner = true;
+                
+                Object.keys(returningWinner.baseStats).forEach(stat => {
+                    if(stat !== 'cowardice') returningWinner.baseStats[stat] = Math.min(15, (returningWinner.baseStats[stat] || 0) + 1);
+                });
+                returningWinner.baseStats.cowardice = Math.max(0, Math.floor(returningWinner.baseStats.cowardice / 2));
+                
+                logEvent(`A PREVIOUS WINNER RETURNS! P${formatPlayerNumber(originalId)} is actually ${winnerData.name}, the winner of Game #${randomWinnerRecord.gameNumber}! They are more experienced now.`);
+                unlockAchievement('previousWinnerJoins');
+            }
+        }
+    }
+clearAdvancedSettings()
+    establishRelations();
+
+    if (numPlayersInput > 0 && Math.random() < 0.05 && !isAdvancedGame) {
+        const player001 = players.find(p => p.id === 1);
+        if (player001 && !player001.isPreviousWinner) {
+            isPlayer001VIP = true;
+            player001VIP_Id = 1;
+            player001.protection = Math.max(player001.protection, 1);
+            player001.debt = 0;
+            player001.occupation = "Squid Game VIP";
+            if (!superpoweredPlayerIds.has(1)) superpoweredPlayerIds.add(1);
+            logEvent(`P${formatPlayerNumber(1)} (${player001.name}) is a SECRET VIP this game!`);
+        }
+    }
+
+    // --- REPLACEMENT: Use new calculateGridPositions with the full players array ---
+    calculateGridPositions(players);
+    
+    document.getElementById('gameLogList').innerHTML = ''; 
+    document.getElementById('personalityPlayers').innerHTML = '';
+    resetZoom();
+    updateAllPlayerDivs();
+    updateSuperpowerList();
+    updateAllCustomLists(); 
+    updateCounters();
+    displayWinnerHistory();
+    updateEliminationOrderList();
+
+    takeSnapshot(0, "Game Start");
+    updateHistorySliderUI();
+    document.getElementById('history-slider-container').style.display = 'block';
+    // Set the initial label correctly
+    document.getElementById('historySliderLabel').innerText = `Live (${players.length} remaining)`;
+
+
+    if (isAdvancedGame) {
+        clearAdvancedSettings();
+    }
+}
+
+
+
+
+function permanentlyDeleteOutPlayers() {
+if (isViewingArchivedGame) return;
+if(isCompactedView) {
+    // If the user deletes while in compacted view, we should restore full view 
+    // temporarily so the roster re-indexing happens correctly.
+    isCompactedView = false;
+    document.getElementById('toggleRosterBtn').innerText = "Compact Roster (Delete Out)";
+}
+
+setGameAsModified();
+
+const initialCount = players.length;
+// Filter out the eliminated players permanently
+players = players.filter(p => !p.eliminated && !p.votedOut); 
+const deletedCount = initialCount - players.length;
+
+// Reset original roster size and recalculate base grid positions based on the smaller group
+originalRosterSize = players.length;
+calculateGridPositions(players); // Use the new function with the filtered array
+
+// Update internal tracking sets
+const remainingIds = new Set(players.map(p => p.id));
+personalityPlayers = new Set([...personalityPlayers].filter(id => remainingIds.has(id)));
+superpoweredPlayerIds = new Set([...superpoweredPlayerIds].filter(id => remainingIds.has(id) || (isPlayer001VIP && id === player001VIP_Id)));
+
+// Redraw everything with the new layout
+updateAllPlayerDivs();
+updateCounters(); 
+updateAllCustomLists(); 
+updateSuperpowerList(); 
+logEvent(`${deletedCount} eliminated/Voted Out players permanently removed. Roster reorganized.`);
+}
+
+
+
+
+function applySuperpower() {
+    if (isViewingArchivedGame) return;
+    setGameAsModified();
+    const playerId = parseInt(document.getElementById('superpowerPlayerId').value);
+    const protectionLevel = parseInt(document.getElementById('protectionLevel').value);
+    if (isNaN(playerId) || playerId <=0 || isNaN(protectionLevel) || protectionLevel <= 0) { alert("Valid ID & protection > 0."); return; }
+    const player = players.find(p => p.id === playerId && !p.eliminated && !p.votedOut);
+    if (!player) { alert(`Player P${formatPlayerNumber(playerId)} not active.`); return; }
+    
+    player.protection += protectionLevel;
+    if(!superpoweredPlayerIds.has(playerId)) superpoweredPlayerIds.add(playerId); 
+    updateAllPlayerDivs(); updateSuperpowerList();
+    logEvent(`Superpower (Prot: +${protectionLevel}) applied to P${formatPlayerNumber(playerId)}. Total: ${player.protection}`);
+}
+
+function updateSuperpowerList() {
+    const list = document.getElementById('superpoweredPlayers'); list.innerHTML = '';
+    superpoweredPlayerIds.forEach(id => {
+        const p = players.find(player => player.id === id);
+        if (p) { 
+            let reason = p.roundVotedOut === 'Escaped' ? 'Escaped' : `VR${p.roundVotedOut || 'N/A'}`;
+            let status = p.votedOut ? `Out (${reason})` 
+                        : p.eliminated ? `Eliminated (GR${p.eliminationRound || 'N/A'})` 
+                        : 'In Game';
+            let nameDisplay = p.name ? p.name : `P${formatPlayerNumber(p.id)}`;
+            if (isPlayer001VIP && p.id === player001VIP_Id) nameDisplay += " [VIP]";
+            list.innerHTML += `<li>${createPlayerLink(p.id)} (${nameDisplay}) - Prot: ${p.protection} - ${status}</li>`;
+        }
+    });
+}
+
+function applyPersonality() {
+    if (isViewingArchivedGame) return;
+    setGameAsModified();
+    const playerId = parseInt(document.getElementById('personalityPlayerId').value);
+    if (isNaN(playerId) || playerId <= 0) { alert("Valid Player ID."); return; }
+    const player = players.find(p => p.id === playerId && !p.eliminated && !p.votedOut);
+    if (!player) { alert(`Player P${formatPlayerNumber(playerId)} not active.`); return; }
+    
+    const firstName = document.getElementById('playerFirstName').value.trim();
+    const lastName = document.getElementById('playerLastName').value.trim();
+    const nickname = document.getElementById('playerNickname').value.trim();
+    const age = parseInt(document.getElementById('playerAge').value);
+    const country = document.getElementById('playerCountry').value.trim();
+    const occupation = document.getElementById('playerOccupation').value.trim();
+    const gender = document.getElementById('playerGender').value;
+    const debt = parseInt(document.getElementById('playerDebt').value);
+
+    if (firstName) player.firstName = firstName;
+    if (lastName) player.lastName = lastName;
+    if (firstName || lastName) player.name = `${player.firstName || ''} ${player.lastName || ''}`.trim();
+    if (nickname) player.nickname = nickname; 
+    if (player.nickname && !player.name) player.name = player.nickname; 
+
+    if (!isNaN(age) && age >= 18) player.age = age;
+    if (country) player.country = country;
+    if(occupation && !(isPlayer001VIP && player.id === player001VIP_Id)) player.occupation = occupation;
+    if (gender) player.gender = gender;
+    if (!isNaN(debt) && debt >=0 && !(isPlayer001VIP && player.id === player001VIP_Id) ) player.debt = debt;
+
+    personalityPlayers.add(playerId);
+    updateAllPlayerDivs();
+    updateAllCustomLists(); // <-- MODIFIED to include favorites and personalities
+    updateCounters();
+    logEvent(`Personality applied to P${formatPlayerNumber(playerId)} (${player.name || ''}).`);
+}
+
+function updateAllPersonalityLists() {
+    const list = document.getElementById('personalityPlayers'); list.innerHTML = '';
+    personalityPlayers.forEach(id => {
+        const p = players.find(player => player.id === id);
+        if (p) {
+            let reason = p.roundVotedOut === 'Escaped' ? 'Escaped' : `VR${p.roundVotedOut || 'N/A'}`;
+            let status = p.votedOut ? `Out (${reason})` 
+                        : p.eliminated ? `Eliminated (GR${p.eliminationRound || 'N/A'})` 
+                        : 'In Game';
+            let nameDisplay = p.name ? p.name : `P${formatPlayerNumber(p.id)}`;
+            if (isPlayer001VIP && p.id === player001VIP_Id) nameDisplay += " [VIP]";
+            list.innerHTML += `<li>${createPlayerLink(p.id)} (${nameDisplay}) - ${status}</li>`;
+        }
+    });
+}
+
+function eliminateRandomPlayer() {
+    if (isViewingArchivedGame) return;
+    const activePlayers = getActivePlayers();
+    if (activePlayers.length === 0) {
+        alert("No active players to eliminate.");
+        return;
+    }
+    const randomPlayer = activePlayers[Math.floor(Math.random() * activePlayers.length)];
+    manualElimination(true, randomPlayer.id, 'manualPlayerId_other', 'manualActionReason_other');
+}
+
+function manualElimination(isRandom = false, randomPlayerId = null, playerIdInputId = 'manualPlayerId_other', reasonInputId = 'manualActionReason_other') {
+    if (isViewingArchivedGame) return false;
+    if(isViewingHistory) { alert("Cannot perform actions while viewing history. Please Return to Live."); return false; }
+    
+    // NEW CHECK HERE
+    const tempPlayerId = isRandom ? randomPlayerId : parseInt(document.getElementById(playerIdInputId).value);
+    const tempPlayer = players.find(p => p.id === tempPlayerId);
+    if (tempPlayer && tempPlayer.isBaby) {
+        alert("The baby cannot be manually eliminated. Eliminate the caretaker.");
+        return false;
+    }
+    // END NEW CHECK
+
+    setGameAsModified();
+    const playerId = isRandom ? randomPlayerId : parseInt(document.getElementById(playerIdInputId).value);
+    if (isNaN(playerId) || playerId <= 0) {
+        if (!isRandom) alert("Please enter a valid Player ID.");
+        return false;
+    }
+
+    const player = players.find(p => p.id === playerId);
+    if (!player) { if (!isRandom) alert(`Player P${formatPlayerNumber(playerId)} not found.`); return false; }
+    if (player.eliminated || player.votedOut) { if (!isRandom) alert(`Player P${formatPlayerNumber(playerId)} is already out.`); return false; }
+
+    player.eliminated = true;
+    player.wasFinalistWhenEliminated = player.isFinalist;
+    player.isFinalist = false; player.isWinner = false;
+    player.eliminationRound = round;
+    currentPrizePot += 100000;
+
+    const reason = document.getElementById(reasonInputId).value.trim();
+    let logMessage, actionLogReason;
+
+    if (isRandom) {
+        logMessage = `P${formatPlayerNumber(player.id)} (${player.name || ''}) was randomly eliminated.`;
+        actionLogReason = 'Randomly eliminated.';
+        if (reason) {
+            logMessage += ` Reason given: ${reason}.`;
+            actionLogReason += ` (Reason: ${reason})`;
+        }
+    } else {
+        unlockAchievement('handOfGod');
+        logMessage = `P${formatPlayerNumber(player.id)} (${player.name || ''}) was manually eliminated.`;
+        actionLogReason = reason ? `Manually eliminated for: ${reason}.` : 'Manually eliminated for unspecified reasons.';
+        if(reason) logMessage += ` Reason: ${reason}.`;
+    }
+    
+    player.actionLog.push(`GR ${round}: ${actionLogReason}`);
+    if(firstEliminationOfGame) {
+        logEvent(`<strong>FIRST ELIMINATION:</strong> P${formatPlayerNumber(player.id)} was the first person eliminated in Game #${currentGameNumber}!`);
+        firstEliminationOfGame = false;
+    }
+    logEvent(logMessage);
+
+    updateAllianceStatBoosts();
+    updateAllPlayerDivs();
+    updateAllCustomLists();
+    updateSuperpowerList();
+    updateCounters();
+    
+    eliminationOrder.push({ isHeader: true, round: round, text: `Event: Manual Elimination` });
+    handleEliminationProcessing([player], actionLogReason, false, "Manual Elimination", false, false, null, true);
+
+    if (!isRandom) {
+        alert(`Player P${formatPlayerNumber(player.id)} has been eliminated.`);
+        document.getElementById(playerIdInputId).value = '';
+        document.getElementById(reasonInputId).value = '';
+    }
+    return true;
+}
+
+function revivePlayer(playerIdInputId = 'manualPlayerId_other') {
+    if (isViewingArchivedGame) return;
+    if(isViewingHistory) { alert("Cannot perform actions while viewing history. Please Return to Live."); return; }
+    setGameAsModified();
+    const playerId = parseInt(document.getElementById(playerIdInputId).value);
+    if (isNaN(playerId) || playerId <= 0) {
+        alert("Please enter a valid Player ID to revive.");
+        return;
+    }
+
+    const player = players.find(p => p.id === playerId);
+    if (!player) {
+        alert(`Player P${formatPlayerNumber(playerId)} not found.`);
+        return;
+    }
+    if (!player.eliminated && !player.votedOut) {
+        alert(`Player P${formatPlayerNumber(playerId)} is still active and cannot be revived.`);
+        return;
+    }
+    unlockAchievement('necromancer');
+    const wasVotedOut = player.votedOut;
+    player.eliminated = false; player.votedOut = false;
+    player.eliminationRound = null; player.roundVotedOut = null;
+    player.wasFinalistWhenEliminated = false; player.isFinalist = false; player.isWinner = false;
+    
+    // Remove from elimination order
+    eliminationOrder = eliminationOrder.filter(item => !item.playerId || item.playerId !== playerId);
+
+
+    if (!wasVotedOut) {
+            currentPrizePot = Math.max(0, currentPrizePot - 100000);
+    }
+    
+    player.actionLog.push(`GR ${round}: Was revived by the game masters.`);
+    logEvent(`PLAYER REVIVED! P${formatPlayerNumber(player.id)} (${player.name || ''}) has returned to the game.`);
+
+    updateAllPlayerDivs();
+    updateCounters();
+    updateAllCustomLists();
+    updateSuperpowerList();
+    updateEliminationOrderList();
+    document.getElementById(playerIdInputId).value = '';
+}
+
+function preRoundUpdate() {
+    if (isViewingArchivedGame) return false;
+    if(isViewingHistory) { alert("Cannot start a new round while viewing history. Please Return to Live."); return false; }
+    round++;
+    
+        if (round === 1) {
+        if (personalityPlayers.size >= 10) {
+            unlockAchievement('dramatisPersonae');
+        }
+    }
+    
+    // Check for births
+    players.forEach(p => {
+        if (p.isPregnant && Math.random() < 1/3) {
+            p.isPregnant = false;
+            p.hasBaby = {}; // Placeholder for now
+            logEvent(`A baby has been born in the dorms!`);
+            p.actionLog.push(`(Gave birth at the start of GR ${round})`);
+        }
+    });
+
+    
+
+    const activePlayers = getActivePlayers();
+    if (activePlayers.length <= 10) {
+        activePlayers.forEach(p => {
+            if (!p.reachedTop10) {
+                p.reachedTop10 = true;
+                p.actionLog.push(`(Reached the Top 10)`);
+            }
+        });
+    }
+    return true;
+}
+
+// NEW: Centralized survival mechanic checker
+function checkSurvivalMechanics(player, gameName, isEvent = false) {
+    // NEW: Forced winner check is the highest priority
+    if (forcedWinnerId === player.id) {
+        return true; // They automatically survive everything.
+    }
+    
+    if (player.hasHint && !isEvent) { // Hint only works for games, not events
+        player.hasHint = false;
+        logEvent(`${createPlayerLink(player.id)}'s hint allowed them to automatically pass ${gameName}!`);
+        player.actionLog.push(`Event: Used a hint to pass ${gameName}.`);
+        return true; // Survived
+    }
+    if (player.protection > 0) {
+        player.protection--;
+        logEvent(`${createPlayerLink(player.id)}'s protection saved them during ${gameName}! (${player.protection} left)`);
+        updateSuperpowerList();
+        player.actionLog.push(`Event: Survived ${gameName} due to protection.`);
+        return true; // Survived
+    }
+    return false; // Did not survive via special means
+}
+
+
+function playRound() {
+    if (isViewingArchivedGame) return;
+    if (!preRoundUpdate()) return;
+
+    if(animationModeEnabled) {
+            toggleAnimationMode();
+    }
+    const numEliminatedInput = parseInt(document.getElementById('numEliminated').value);
+    const description = document.getElementById('roundDescription').value || "failed a generic challenge";
+    let activePlayers = getActivePlayers();
+
+    if (activePlayers.length === 0) { alert("No active players!"); return; }
+    if (numEliminatedInput <= 0) { alert("Eliminations must be > 0."); return; }
+        if (activePlayers.length > 0 && numEliminatedInput >= activePlayers.length ) {
+            alert("Too many eliminations for remaining players! At least one must survive."); return;
+    }
+    
+    activePlayers = getActivePlayers(); // Re-fetch after preRoundUpdate
+
+    const eliminatedThisRound = [];
+    let availableForElimination = [...activePlayers];
+    let successfullyEliminatedCount = 0;
+    
+    eliminationOrder.push({ isHeader: true, round: round, text: `GR ${round}: Custom Round` });
+
+    while(successfullyEliminatedCount < numEliminatedInput && availableForElimination.length > 0) {
+        const selectionIndex = Math.floor(Math.random() * availableForElimination.length);
+        const selectedPlayer = availableForElimination[selectionIndex];
+        
+        if (checkSurvivalMechanics(selectedPlayer, "a custom round")) {
+            availableForElimination.splice(selectionIndex, 1);
+            continue; 
+        }
+        
+        availableForElimination.splice(selectionIndex, 1);
+        eliminatedThisRound.push(selectedPlayer);
+        successfullyEliminatedCount++;
+    }
+    
+    if (animationModeEnabled) {
+        playersToEliminateInAnimation = eliminatedThisRound.map(p => p.id);
+        animatedEliminationIndex = 0;
+        processNextAnimatedElimination(description);
+    } else {
+            handleEliminationProcessing(eliminatedThisRound, description, false, "a custom round", false, false, null);
+    }
+}
+
+function toggleAnimationMode() {
+    if (isViewingArchivedGame) return;
+    if(isViewingHistory) return;
+    animationModeEnabled = !animationModeEnabled;
+    const btn = document.getElementById('animationModeBtn');
+    btn.classList.toggle('active', animationModeEnabled);
+    btn.innerText = animationModeEnabled ? 'Animation Mode ARMED' : 'Arm Animation Mode';
+}
+
+function processNextAnimatedElimination(reason, isVotedOutAction = false, customRoundVotedOut = null, reasonPool = null) {
+    if (isViewingArchivedGame) return;
+    if (animationPaused) return;
+
+    const controls = document.querySelectorAll('.controls button, .control-panel button');
+    controls.forEach(c => c.disabled = true);
+    document.getElementById('pausePlayButton').disabled = false;
+    
+    const announcement = document.getElementById('eliminationAnnouncement');
+    if (announcementTimeoutId) clearTimeout(announcementTimeoutId);
+
+    if (animatedEliminationIndex < playersToEliminateInAnimation.length) {
+        const playerId = playersToEliminateInAnimation[animatedEliminationIndex];
+        const player = players.find(p => p.id === playerId);
+        
+        if (isVotedOutAction) {
+            player.votedOut = true;
+            player.roundVotedOut = customRoundVotedOut || (votingRoundCount > 0 ? votingRoundCount : null);
+        } else {
+            player.eliminated = true;
+            player.eliminationRound = round;
+            player.wasFinalistWhenEliminated = player.isFinalist;
+            player.isFinalist = false; 
+            player.isWinner = false;
+        }
+        
+        playSound('elimination');
+        updateAllPlayerDivs();
+        updateCounters();
+
+        announcement.innerHTML = `Player ${formatPlayerNumber(player.id)} Eliminated.`;
+        announcement.style.display = 'block';
+        announcement.classList.remove('fade-out');
+        announcementTimeoutId = setTimeout(() => announcement.classList.add('fade-out'), 1300);
+
+        animatedEliminationIndex++;
+        const delay = Math.random() * 400 + 100;
+        animationTimeoutId = setTimeout(() => processNextAnimatedElimination(reason, isVotedOutAction, customRoundVotedOut, reasonPool), delay);
+    } else {
+        controls.forEach(c => c.disabled = false);
+        document.getElementById('pausePlayButton').disabled = true;
+        document.getElementById('pausePlayButton').innerText = 'Pause Animation';
+
+        const eliminatedPlayersObjects = playersToEliminateInAnimation.map(id => players.find(p => p.id === id));
+        handleEliminationProcessing(eliminatedPlayersObjects, reason, true, "Animation", isVotedOutAction, false, null, false, reasonPool);
+    }
+}
+
+function pausePlayAnimation() {
+    if (isViewingArchivedGame) return;
+    const btn = document.getElementById('pausePlayButton');
+    animationPaused = !animationPaused;
+    if (animationPaused) {
+        btn.innerText = 'Resume Animation';
+        if (animationTimeoutId) clearTimeout(animationTimeoutId);
+    } else {
+        btn.innerText = 'Pause Animation';
+        const reason = document.getElementById('roundDescription').value || "failed a generic challenge";
+        processNextAnimatedElimination(reason);
+    }
+}
+
+function startVotingRound() {
+    if (isViewingArchivedGame) return;
+    if(isViewingHistory) { alert("Cannot perform actions while viewing history. Please Return to Live."); return; }
+    if (!season2ModeActive) { alert("Season 2 Mode is not active."); return; }
+    const activePlayers = getActivePlayers();
+    if (activePlayers.length === 0) { alert("No active players to vote."); return; }
+    
+    playSound('click');
+    votingRoundCount++;
+    let oVotes = 0; let xVotes = 0;
+
+    const charismaticO_Voters = activePlayers.filter(p => getEffectiveStat(p, 'charisma') > 7 && (p.currentVote === 'O' || p.voteHistory.length === 0));
+    let xVoters = activePlayers.filter(p => p.currentVote === 'X');
+
+    charismaticO_Voters.forEach(influencer => {
+        if (Math.random() < getEffectiveStat(influencer, 'charisma') / 100) { 
+            const target = xVoters[Math.floor(Math.random() * xVoters.length)];
+            if (target && target.currentVote === 'X') {
+                if(Math.random() < 0.5) { 
+                    target.currentVote = 'O'; 
+                    logEvent(`P${formatPlayerNumber(influencer.id)} (${influencer.name}) successfully convinced P${formatPlayerNumber(target.id)} to change their vote to O!`);
+                }
+            }
+        }
+    });
+
+    activePlayers.forEach(player => {
+        let voteDecision;
+        if (isPlayer001VIP && player.id === player001VIP_Id) {
+            voteDecision = 'O';
+        } else if (player.voteHistory.length === 0) { 
+            voteDecision = Math.random() < (Math.random() * (0.60 - 0.47) + 0.47) ? 'O' : 'X';
+        } else {
+            if (player.currentVote === 'O') voteDecision = Math.random() < 0.90 ? 'O' : 'X'; 
+            else voteDecision = Math.random() < 0.90 ? 'X' : 'O'; 
+        }
+        player.currentVote = voteDecision;
+        player.voteHistory.push({ votingRound: votingRoundCount, gameRoundAtVote: round, vote: voteDecision });
+        if (voteDecision === 'O') oVotes++; else xVotes++;
+    });
+
+    updateAllPlayerDivs(); updateStatistics();
+
+    let logMessage = `Voting Round ${votingRoundCount} (during GR ${round}):<br>`;
+    logMessage += `  Players Voted 'O' (Stay): ${oVotes}<br>`;
+    logMessage += `  Players Voted 'X' (Leave): ${xVotes}<br>`;
+    if (xVotes > oVotes) {
+        const moneyPerPlayer = activePlayers.length > 0 ? TOTAL_PRIZE_MONEY / activePlayers.length : 0;
+        const popupMessage = `Majority voted to LEAVE!\n${formatCurrency(TOTAL_PRIZE_MONEY)} split among ${activePlayers.length} active player(s).\nEach receives: ${formatCurrency(moneyPerPlayer)}.`;
+        alert(popupMessage);
+        logMessage += `  Result: Majority voted to LEAVE.`;
+        if (confirm("A majority has voted to end the game. Do the remaining players agree to leave? (OK=Yes, Cancel=No)")) {
+                logEvent(logMessage + " The players agreed to leave.");
+                playPresetGame('Voted To Leave', 100, 100, "agreed to leave after the vote");
+        } else {
+                logEvent(logMessage + " But they were forced to continue!");
+        }
+    } else {
+        logMessage += `  Result: Majority (${oVotes > xVotes ? 'O' : 'Tie, O default'}) voted to STAY. Game continues.`;
+        logEvent(logMessage);
+    }
+}
+
+function playPresetGame(gameName, minPercent, maxPercent, gameDescription, reasonPool = null) {
+    if (isViewingArchivedGame) return;
+    if(isViewingHistory) { alert("Cannot perform actions while viewing history. Please Return to Live."); return; }
+    const eventNames = ["Confirm Winners", "Voted To Leave", "Get Finalist", "Confirm Finalists"];
+    const isGameRound = !eventNames.includes(gameName);
+    let activePlayers = getActivePlayers();
+
+    if (gameName === "Confirm Winners") {
+        if (activePlayers.length > 0) {
+            logEvent(`Event (Post-GR ${round}): All ${activePlayers.length} remaining players have been confirmed as JOINT WINNERS!`);
+            activePlayers.forEach(p => { p.isWinner = true; p.isFinalist = false; });
+            checkFinalistsAndWinner();
+        } else {
+            logEvent(`Event (Post-GR ${round}): No players to confirm as winners.`);
+        }
+        return;
+    }
+
+    if (gameName === "Confirm Finalists") {
+        logEvent(`Event (Post-GR ${round}): All ${activePlayers.length} remaining players are confirmed as FINALISTS.`);
+        activePlayers.forEach(p => { p.isFinalist = true; p.confirmedFinalist = true; });
+        updateAllPlayerDivs();
+        updateCounters();
+        return;
+    }
+
+    if (isGameRound) {
+        if (!preRoundUpdate()) return;
+    }
+    
+    const rebellionDeathReasons = ['Died while getting flanked', 'Got shot by guard', 'Died while shot on the stairs', 'Died in the control room'];
+    if (gameName === "Rebellion") {
+        reasonPool = rebellionDeathReasons;
+    }
+
+    activePlayers = getActivePlayers();
+
+    if (gameName === "Get Finalist" && activePlayers.length <= 3) { 
+        logEvent(`Event (Post-GR ${round}): Target (<=3) for Get Finalist already met.`); 
+        return; 
+    }
+    if (activePlayers.length === 0) {
+        const roundType = isGameRound ? `GR ${round}` : `Event (Post-GR ${round})`;
+        logEvent(`${roundType} (${gameName}): No active players.`);
+        return;
+    }
+
+    eliminationOrder.push({ isHeader: true, round: round, text: `${isGameRound ? `GR ${round}` : 'Event'}: ${gameName}` });
+
+    let isVotedOutAction = gameName === "Voted To Leave";
+    let isRebellion = gameName === "Rebellion";
+    let availablePlayersToPickFrom = [...activePlayers];
+    let rebellionFallback = false;
+    
+    if (isRebellion) {
+        const xVoters = activePlayers.filter(p => p.currentVote === 'X');
+        if (!season2ModeActive || xVoters.length === 0) {
+                rebellionFallback = true;
+                minPercent = 10; maxPercent = 10;
+        } else {
+            availablePlayersToPickFrom = xVoters;
+            minPercent = 30; maxPercent = 30;
+        }
+    } else if (isVotedOutAction) {
+        availablePlayersToPickFrom.sort((a,b) => (getEffectiveStat(b, 'cowardice') - getEffectiveStat(b, 'greed')) - (getEffectiveStat(a, 'cowardice') - getEffectiveStat(a, 'greed')));
+    }
+    
+    let numToEliminateTarget;
+    
+    if (gameName === "Get Finalist") {
+            numToEliminateTarget = availablePlayersToPickFrom.length > 3 ? availablePlayersToPickFrom.length - 3 : 0;
+    } else {
+        const randomPercent = Math.random() * (maxPercent - minPercent) + minPercent;
+        numToEliminateTarget = Math.floor(availablePlayersToPickFrom.length * (randomPercent / 100));
+    }
+    
+    const eliminatedThisRound = [];
+    let successfullyEliminatedCount = 0;
+    
+    if (isRebellion && !rebellionFallback && Math.random() < 0.10) {
+        const rebelLeader = availablePlayersToPickFrom.sort((a,b) => (getEffectiveStat(b,'charisma') + getEffectiveStat(b,'strength')) - (getEffectiveStat(a,'charisma') + getEffectiveStat(a,'strength')))[0];
+        const rebels = availablePlayersToPickFrom.map(p => `P${formatPlayerNumber(p.id)}`).join(', ');
+        let survivors = getActivePlayers();
+        
+        // Rebellion success casualties
+        let casualties = [];
+        const numCasualties = Math.floor(Math.random() * 11); // 0-10 casualties
+        survivors.sort(() => 0.5 - Math.random());
+        for(let i=0; i<numCasualties && survivors.length > 1; i++) {
+            casualties.push(survivors.pop());
+        }
+
+        logEvent(`<strong>REBELLION SUCCESSFUL!</strong> The players have overthrown the game!`, `Rebels: ${rebels}.`);
+        logEvent(`P${formatPlayerNumber(rebelLeader.id)} took down the Front Man! Most survivors escape, but ${casualties.length} died in the fighting.`);
+        unlockAchievement('revolution');
+
+        casualties.forEach(p => {
+            p.eliminated = true; // Mark them as eliminated
+            const deathReason = rebellionDeathReasons[Math.floor(Math.random() * rebellionDeathReasons.length)];
+            p.actionLog.push(`Event: ${deathReason} during the successful rebellion.`);
+        });
+        
+        saveCompletedGameRecord({
+            winnerId: null, winnerName: "Rebellion Successful",
+            finalistIds: survivors.map(p => p.id),
+            specialOutcome: `All ${survivors.length} players escaped after a successful rebellion led by ${createPlayerLink(rebelLeader.id)}.`,
+            prizeSplit: 0
+        });
+        displayWinnerHistory();
+        players.forEach(p=> { if (!p.eliminated) p.eliminated = true; }); // Mark all as out of the game
+        updateAllPlayerDivs(); updateCounters();
+        return;
+    }
+
+    while (successfullyEliminatedCount < numToEliminateTarget && availablePlayersToPickFrom.length > 0) {
+        const selectionIndex = isVotedOutAction ? 0 : Math.floor(Math.random() * availablePlayersToPickFrom.length);
+        let selectedPlayer = availablePlayersToPickFrom[selectionIndex];
+        
+        let wasSabotagedByEnemy = false;
+        let enemyFactor = 0;
+        // Enhanced Sabotage by Caretaker
+        if (selectedPlayer.caretakerFor) {
+            // Caretakers are less likely to be sabotaged
+                if (Math.random() > 0.8) wasSabotagedByEnemy = false;
+        } else if (selectedPlayer.enemies && selectedPlayer.enemies.length > 0) {
+                const activeEnemies = selectedPlayer.enemies.filter(enemyId => players.some(p => p.id === enemyId && !p.eliminated && !p.votedOut));
+                if (activeEnemies.length > 0 && ['Jump Rope'].includes(gameName)) {
+                const enemy = players.find(p => p.id === activeEnemies[0]);
+                enemyFactor = 0.25;
+                // If enemy is a caretaker, greatly increase sabotage chance
+                if (enemy.caretakerFor && enemy.enemies.includes(selectedPlayer.id)) {
+                    enemyFactor = 0.9;
+                }
+                if(Math.random() < enemyFactor){
+                    wasSabotagedByEnemy = true;
+                    creditElimination(enemy.id, selectedPlayer.id);
+                    selectedPlayer.actionLog.push(`GR ${round}: Was sabotaged by enemy P${formatPlayerNumber(enemy.id)} during ${gameName}.`);
+                    enemy.actionLog.push(`GR ${round}: Sabotaged enemy P${formatPlayerNumber(selectedPlayer.id)} during ${gameName}.`);
+                }
+            }
+        }
+
+
+        if(wasSabotagedByEnemy) { // Sabotage bypasses protection and survival checks
+        } else {
+            if (!isVotedOutAction) {
+                let survivalModifier = 0;
+                const traitGames = ['Mingle', 'Jump Rope', 'Human Chess', 'Four Square', 'Lights Out', 'Simon Says', 'Musical Chairs'];
+                if(traitGames.includes(gameName)) {
+                    if(gameName === 'Mingle') survivalModifier = (getEffectiveStat(selectedPlayer, 'charisma') + getEffectiveStat(selectedPlayer, 'luck') - getEffectiveStat(selectedPlayer, 'cowardice')) / 50;
+                    if(gameName === 'Jump Rope') survivalModifier = getEffectiveStat(selectedPlayer, 'agility') / 40;
+                    if(gameName === 'Human Chess') survivalModifier = (getEffectiveStat(selectedPlayer, 'intelligence') * 1.5 + getEffectiveStat(selectedPlayer, 'luck')) / 70;
+                    if(gameName === 'Four Square') survivalModifier = getEffectiveStat(selectedPlayer, 'agility') / 35;
+                    if (gameName === 'Lights Out') survivalModifier = (getEffectiveStat(selectedPlayer, 'strength') + getEffectiveStat(selectedPlayer, 'luck') - getEffectiveStat(selectedPlayer, 'cowardice')) / 25;
+                    if (gameName === 'Simon Says') survivalModifier = getEffectiveStat(selectedPlayer, 'intelligence') / 20;
+                    if (gameName === 'Musical Chairs') survivalModifier = getEffectiveStat(selectedPlayer, 'luck') / 25;
+                } else if (selectedPlayer.allies && selectedPlayer.allies.length > 0) {
+                        survivalModifier = 0.05;
+                }
+                
+                if (Math.random() < survivalModifier) {
+                    availablePlayersToPickFrom.splice(selectionIndex, 1);
+                    continue; 
+                }
+            }
+            
+            if (!isVotedOutAction && checkSurvivalMechanics(selectedPlayer, gameName)) {
+                availablePlayersToPickFrom.splice(selectionIndex, 1);
+                continue;
+            }
+        }
+
+        availablePlayersToPickFrom.splice(selectionIndex, 1);
+        
+        if (gameName === 'Mingle') {
+            const mingleRounds = ['first', 'second', 'third', 'fourth', 'fifth'];
+            const failedRound = mingleRounds[Math.floor(Math.random() * mingleRounds.length)];
+            selectedPlayer.actionLog.push(`GR ${round}: Eliminated on the ${failedRound} round of Mingle.`);
+        }
+        eliminatedThisRound.push(selectedPlayer); successfullyEliminatedCount++;
+    }
+    
+
+    if (rebellionFallback) {
+            logEvent(`GR ${round} (Rebellion): No X-voters, ${eliminatedThisRound.length} random player(s) eliminated.`);
+    }
+    
+    const survivorsThisRound = activePlayers.filter(p => !eliminatedThisRound.some(e => e.id === p.id));
+    survivorsThisRound.forEach(s => s.actionLog.push(`GR ${round}: Passed ${gameName}.`));
+    if (gameName === 'Voted To Leave') {
+        eliminatedThisRound.forEach(e => e.actionLog.push(`GR ${round}: Player left the games, but didn't return.`));
+    } else if (reasonPool) {
+            eliminatedThisRound.forEach(e => {
+            const reason = reasonPool[Math.floor(Math.random() * reasonPool.length)];
+            e.actionLog.push(`GR ${round}: ${reason} during the rebellion.`);
+            });
+    }
+    else {
+        eliminatedThisRound.forEach(e => e.actionLog.push(`GR ${round}: Failed ${gameName}.`));
+    }
+    
+    eliminatedThisRound.sort(() => Math.random() - 0.5);
+
+    if (animationModeEnabled) {
+            toggleAnimationMode();
+            playersToEliminateInAnimation = eliminatedThisRound.map(p => p.id);
+            animatedEliminationIndex = 0;
+            let reason = rebellionFallback ? `were randomly eliminated as there were no rebels.` : gameDescription;
+            processNextAnimatedElimination(reason, isVotedOutAction, null, reasonPool);
+    } else {
+        handleEliminationProcessing(eliminatedThisRound, gameDescription, false, gameName, isVotedOutAction, rebellionFallback, null, false, reasonPool);
+    }
+}
+
+function handleEliminationProcessing(eliminatedThisRound, reason, wasAnimated = false, gameName = "a custom round", isVotedOutAction = false, rebellionFallback = false, customDetails = null, isManualAction = false, reasonPool = null) {
+    let actualEliminations = [];
+    let babyTransformations = new Map(); // motherId -> baby
+    
+    eliminatedThisRound.forEach(p => {
+            // If the mother dies, transform her into the baby instead of eliminating outright
+        if (p.hasBaby && !p.isBaby) {
+            p.eliminated = false; // Prevent normal elimination
+            
+            p.name = "Unnamed Baby";
+            p.isBaby = true;
+            p.age = 0;
+            p.occupation = "Infant";
+            p.debt = 0;
+            p.gender = Math.random() < 0.5 ? 'Male' : 'Female';
+            p.baseStats = { strength: 1, agility: 1, intelligence: 1, charisma: 1, luck: 1, cowardice: 1, greed: 1 };
+            
+            babyTransformations.set(p.id, p);
+            logEvent(`The eliminated P${formatPlayerNumber(p.id)}'s baby has taken their place in the game!`);
+        } else if (p.caretakerFor) {
+            // If a caretaker is eliminated, the baby is too.
+            const baby = players.find(b => b.id === p.caretakerFor);
+            if (baby && !actualEliminations.includes(baby)) {
+                logEvent(`The caretaker P${formatPlayerNumber(p.id)} has died. The baby they were protecting, P${formatPlayerNumber(baby.id)}, has also been eliminated.`);
+                actualEliminations.push(baby);
+            }
+            actualEliminations.push(p);
+        }
+        else {
+            actualEliminations.push(p);
+        }
+    });
+
+    if (!wasAnimated) {
+        actualEliminations.forEach(p => {
+            if (isVotedOutAction) {
+                p.votedOut = true;
+                p.roundVotedOut = votingRoundCount > 0 ? votingRoundCount : null; 
+            } else {
+                p.eliminated = true;
+                p.eliminationRound = round;
+                p.wasFinalistWhenEliminated = p.isFinalist;
+                p.isFinalist = false; 
+                p.isWinner = false;
+            }
+            playSound('elimination');
+        });
+        updateAllPlayerDivs();
+    }
+
+    // Add to elimination order list
+    actualEliminations.forEach(p => {
+        const isEvent = gameName.includes("Event") || isManualAction || usedEvents.has(gameName.toLowerCase().replace(/ /g, ''));
+        if (!eliminationOrder.some(item => !item.isHeader && item.playerId === p.id)) {
+            eliminationOrder.push({ isHeader: false, playerId: p.id, fromEvent: isEvent });
+        }
+            if (reasonPool && !isVotedOutAction) {
+            const deathReason = reasonPool[Math.floor(Math.random() * reasonPool.length)];
+            p.actionLog.push(`GR ${round}: ${deathReason}`);
+        }
+    });
+    updateEliminationOrderList();
+
+    const betsToRemove = [];
+    for (const bet of currentBets) {
+        const eliminatedBetPlayer = actualEliminations.find(p => p.id === bet.playerId);
+        if (eliminatedBetPlayer) {
+            if (eliminatedBetPlayer.reachedTop10) {
+                const payout = Math.floor(bet.potentialPayout / 3);
+                bettingBalance += bet.amount + payout;
+                logEvent(`<b>VIP BET:</b> Your pick, P${formatPlayerNumber(bet.playerId)}, was eliminated but finished in the Top 10! You win ${formatCurrency(payout)}.`, `Wager of ${formatCurrency(bet.amount)} returned. New Balance: ${formatCurrency(bettingBalance)}`);
+                unlockAchievement('topTenBet');
+            } else {
+                const loss = Math.floor(bet.amount / 2);
+                bettingBalance += (bet.amount - loss);
+                logEvent(`<b>VIP BET:</b> Your pick, P${formatPlayerNumber(bet.playerId)}, has been eliminated. You lose ${formatCurrency(loss)}.`,  `New Balance: ${formatCurrency(bettingBalance)}`);
+            }
+            eliminatedBetPlayer.hasVipBet = false;
+            betsToRemove.push(bet.playerId);
+        }
+    }
+    currentBets = currentBets.filter(bet => !betsToRemove.includes(bet.playerId));
+    updateVipTab();
+    
+    let logText;
+    if (rebellionFallback) {
+        logText = `GR ${round} (Rebellion): No X-voters, ${actualEliminations.length} random player(s) eliminated.`;
+    } else {
+        let actionVerb = isVotedOutAction ? "Voted Out" : "Eliminated";
+        const isEvent = gameName.includes("Event") || isManualAction || usedEvents.has(gameName.toLowerCase().replace(/ /g, ''));
+        const roundPrefix = isEvent ? `Event (Post-GR ${round})` : `GR ${round}`;
+        logText = `${roundPrefix} (${gameName}): ${actualEliminations.length} player(s) ${actionVerb}.`;
+    }
+
+    if (firstEliminationOfGame && actualEliminations.length > 0) {
+        logEvent(`<strong>FIRST ELIMINATION:</strong> P${formatPlayerNumber(actualEliminations[0].id)} was the first person eliminated in Game #${currentGameNumber}!`);
+        firstEliminationOfGame = false;
+    }
+
+    if (actualEliminations.length > 0) {
+        if (!isVotedOutAction) {
+            currentPrizePot += actualEliminations.length * 100000;
+        }
+        let details;
+        if (customDetails) {
+            details = customDetails;
+        } else {
+            let processedNames = actualEliminations.map(p => `P${formatPlayerNumber(p.id)} (${p.name || ''})`).join(', ');
+            details = `Details:<br>${isVotedOutAction ? "Voted Out" : "Eliminated"}: ${processedNames}`;
+        }
+
+        logEvent(logText, details);
+    } else if (!wasAnimated && !isManualAction && babyTransformations.size === 0) {
+            const isEvent = gameName.includes("Event") || isManualAction || usedEvents.has(gameName.toLowerCase().replace(/ /g, ''));
+            const roundPrefix = isEvent ? `GR ${round}` : `GR ${round}`;
+            logEvent(`${roundPrefix} (${gameName}): None were eliminated or the target was 0.`);
+    }
+    
+    // Find caretakers for new babies
+    if (babyTransformations.size > 0) {
+        babyTransformations.forEach(baby => {
+            let activePlayersForCaretaker = getActivePlayers().filter(p => !p.caretakerFor);
+            if (activePlayersForCaretaker.length > 0) {
+                activePlayersForCaretaker.sort((a,b) => (b.baseStats.charisma - b.baseStats.greed) - (a.baseStats.charisma - a.baseStats.greed));
+                const caretaker = activePlayersForCaretaker[0];
+                
+                caretaker.caretakerFor = baby.id;
+                baby.hasCaretaker = caretaker.id;
+                caretaker.protection = Math.max(1, caretaker.protection);
+                logEvent(`${createPlayerLink(caretaker.id)} has taken the baby under their care. They are now highlighted pink.`);
+                caretaker.actionLog.push(`(Became the caretaker for P${formatPlayerNumber(baby.id)})`);
+
+                const greedyPlayers = getActivePlayers().filter(p => p.baseStats.greed >= 10 && p.id !== caretaker.id);
+                if (greedyPlayers.length > 0) {
+                        logEvent("The greediest players have become hostile towards the new caretaker!");
+                        greedyPlayers.forEach(gp => {
+                            if (!caretaker.enemies.includes(gp.id)) caretaker.enemies.push(gp.id);
+                            if (!gp.enemies.includes(caretaker.id)) gp.enemies.push(caretaker.id);
+                            gp.baseStats.greed = Math.min(15, gp.baseStats.greed + 5);
+                        });
+                }
+            } else {
+                // No caretaker found, baby is eliminated
+                baby.eliminated = true;
+                logEvent(`No one was willing to care for the new baby. P${formatPlayerNumber(baby.id)} has been eliminated.`);
+            }
+        });
+    }
+
+
+    if (!isManualAction) {
+        checkRelationGrief(actualEliminations);
+        checkAllianceWipe(actualEliminations);
+        updateRelationships();
+        checkForNewInjuries(gameName);
+        updateInjuryTimers(); // Injuries now expire AFTER the round's events
+        if (Math.random() < 0.01) frontManIntervention();
+    }
+    
+    if(!wasAnimated) updateAllPlayerDivs();
+    
+    updateCounters();
+    updateFavoritedPlayersList();
+    
+    if (isVotedOutAction) {
+            const activePlayers = getActivePlayers();
+            if(activePlayers.length === 0) {
+            if (currentBets.length > 0) {
+                logEvent(`<b>VIP BETTING:</b> The game ended by vote. All active bets are refunded.`);
+                currentBets.forEach(bet => {
+                    bettingBalance += bet.amount;
+                    logEvent(`<b>VIP BET REFUND:</b> P${formatPlayerNumber(bet.playerId)} - Bet of ${formatCurrency(bet.amount)} refunded.`);
+                });
+                currentBets = [];
+                updateVipTab();
+            }
+
+            const prizeSplit = actualEliminations.length > 0 ? (currentPrizePot > 0 ? currentPrizePot : TOTAL_PRIZE_MONEY) / actualEliminations.length : 0;
+            
+            saveCompletedGameRecord({
+                winnerId: null, winnerName: "Game Ended by Vote",
+                finalistIds: actualEliminations.map(p => p.id),
+                specialOutcome: `All ${actualEliminations.length} remaining players voted to leave.`, 
+                prizeSplit: prizeSplit
+            });
+            displayWinnerHistory();
+            return;
+            }
+    }
+    
+    checkFinalistsAndWinner();
+
+    const isEvent = gameName.includes("Event") || isManualAction || usedEvents.has(gameName.toLowerCase().replace(/ /g, ''));
+    const roundNumForSnap = isEvent ? round + 0.5 : round;
+    takeSnapshot(roundNumForSnap, gameName);
+    updateHistorySliderUI();
+}
+
+function checkAllianceWipe(eliminatedThisRound) {
+    if (eliminatedThisRound.length === 0) return;
+
+    const eliminatedIds = new Set(eliminatedThisRound.map(p => p.id));
+    const survivors = getActivePlayers();
+    let selfEliminators = [];
+
+    survivors.forEach(survivor => {
+        if (!survivor.allies || survivor.allies.length < 3) return;
+
+        const alliesBeforeElimination = survivor.allies;
+        const eliminatedAllies = alliesBeforeElimination.filter(allyId => eliminatedIds.has(allyId));
+        
+        if (eliminatedAllies.length === alliesBeforeElimination.length) {
+            if (Math.random() < 0.25) {
+                if(!selfEliminators.find(p => p.id === survivor.id)) {
+                    selfEliminators.push(survivor);
+                }
+            }
+        }
+    });
+
+    if (selfEliminators.length > 0) {
+        unlockAchievement('tragedy');
+        eliminationOrder.push({ isHeader: true, round: round, text: `Event: Alliance Wipe` });
+        selfEliminators.forEach(p => {
+            const reason = `Self-eliminated out of grief after their entire alliance was wiped out.`;
+            p.actionLog.push(`Event: ${reason}`);
+            logEvent(`A TRAGEDY! P${formatPlayerNumber(p.id)} has self-eliminated out of grief!`, `P${formatPlayerNumber(p.id)}'s allies (${p.allies.map(id => `P${formatPlayerNumber(id)}`).join(', ')}) were all eliminated this round.`);
+        });
+        handleEliminationProcessing(selfEliminators, "self-eliminated out of grief", false, "Self-Elimination (Alliance)", false, false);
+    }
+}
+
+function checkRelationGrief(eliminatedThisRound) {
+    if (eliminatedThisRound.length === 0) return;
+    
+    let selfEliminators = [];
+    const checkedPartners = new Set(); // Prevent checking the same survivor multiple times
+
+    eliminatedThisRound.forEach(eliminatedPlayer => {
+        if (!eliminatedPlayer.relation) return;
+
+        const partner = players.find(p => p.id === eliminatedPlayer.relation.targetId && !p.eliminated && !p.votedOut);
+        
+        if (partner && !checkedPartners.has(partner.id)) {
+            checkedPartners.add(partner.id);
+            if (Math.random() < 0.20) {
+                    if(!selfEliminators.find(p => p.id === partner.id)) {
+                    selfEliminators.push(partner);
+                }
+            }
+        }
+    });
+
+    if (selfEliminators.length > 0) {
+        unlockAchievement('tragedy');
+        eliminationOrder.push({ isHeader: true, round: round, text: `Event: Grief Eliminations` });
+        selfEliminators.forEach(p => {
+            const reason = `Self-eliminated out of grief for their relation, ${createPlayerLink(p.relation.targetId)}.`;
+            p.actionLog.push(`Event: ${reason}`);
+            logEvent(`A TRAGEDY! ${createPlayerLink(p.id)} has self-eliminated out of grief!`, reason);
+        });
+        handleEliminationProcessing(selfEliminators, "self-eliminated out of grief", false, "Self-Elimination (Grief)", false, false);
+    }
+}
+
+
+function checkFinalistsAndWinner() {
+    if(isViewingHistory) return;
+    const activePlayers = getActivePlayers();
+    const playerCount = activePlayers.length;
+    
+    // Final 2 check: Caretaker and Baby Sacrifice
+    if (playerCount === 1) { // This means only one REAL player is left
+        const realPlayer = activePlayers[0];
+        const baby = players.find(p => p.isBaby && !p.eliminated && !p.votedOut);
+        
+        if (baby && realPlayer.caretakerFor === baby.id) {
+            const caretaker = realPlayer;
+
+            // --- Start of New Sacrifice Logic ---
+            playSound('win');
+            logEvent(`A final act of love! The caretaker ${createPlayerLink(caretaker.id)} sacrifices themself to let the baby ${createPlayerLink(baby.id)} win!`);
+
+            // 1. Manually eliminate the caretaker
+            caretaker.eliminated = true;
+            caretaker.eliminationRound = round;
+            caretaker.wasFinalistWhenEliminated = true;
+            caretaker.isFinalist = false;
+            caretaker.isWinner = false;
+            caretaker.actionLog.push(`GR ${round}: Sacrificed themself so the baby could win.`);
+
+            // 2. Declare the baby as the winner
+            baby.isWinner = true;
+            baby.actionLog.push(`GR ${round}: Won the Squid Game after their caretaker sacrificed themself.`);
+
+            // 3. Update the elimination order UI
+            eliminationOrder.push({ isHeader: true, round: round, text: `Event: Final Sacrifice` });
+            eliminationOrder.push({ isHeader: false, playerId: caretaker.id, fromEvent: true });
+            updateEliminationOrderList();
+
+            // 4. Save the game record with the baby as the winner
+            saveCompletedGameRecord({
+                winnerId: baby.id,
+                winnerName: baby.name,
+                finalistIds: [caretaker.id] // The caretaker was the other finalist
+            });
+
+            // 5. Refresh all UI elements to show the final result
+            displayWinnerHistory();
+            updateAllPlayerDivs();
+            updateCounters();
+
+            // 6. Stop further execution of this function
+            return;
+            // --- End of New Sacrifice Logic ---
+        }
+    }
+
+    const jointWinners = activePlayers.filter(p => p.isWinner);
+    if (jointWinners.length > 1) {
+        playSound('win');
+        const winnerIds = jointWinners.map(w => w.id);
+        const prizeSplit = currentPrizePot / jointWinners.length;
+        logEvent(`The game has concluded with ${jointWinners.length} JOINT WINNERS!`);
+        unlockAchievement('sharedVictory');
+        
+        if (currentBets.length > 0) {
+            logEvent(`<b>VIP BETTING:</b> The game ended with joint winners. All active bets are refunded.`);
+            currentBets.forEach(bet => {
+                bettingBalance += bet.amount;
+                logEvent(`<b>VIP BET REFUND:</b> Bet on P${formatPlayerNumber(bet.playerId)} for ${formatCurrency(bet.amount)} refunded.`);
+            });
+            currentBets = [];
+            updateVipTab();
+        }
+        
+        saveCompletedGameRecord({
+            winnerId: null, winnerName: "Joint Winners",
+            finalistIds: winnerIds,
+            specialOutcome: `${jointWinners.length} players agreed to split the prize money.`, prizeSplit: prizeSplit
+        });
+        
+        displayWinnerHistory(); updateAllPlayerDivs();
+        return; 
+    }
+
+    players.forEach(p => { 
+        if (!p.eliminated && !p.votedOut && !p.isWinner && !p.confirmedFinalist) {
+            p.isFinalist = false; 
+        }
+    });
+    
+    if (playerCount === 1) {
+        playSound('win');
+        const winner = activePlayers[0];
+        winner.isWinner = true; 
+        updateProgressAchievement('serialWinner', 1);
+
+        if (winner.isPreviousWinner) {
+            unlockAchievement('previousWinnerWins');
+        }
+
+        const winningBet = currentBets.find(bet => bet.playerId === winner.id);
+        if (winningBet) {
+                bettingBalance += winningBet.amount + winningBet.potentialPayout;
+                logEvent(`<b>VIP BET:</b> YOUR PICK WON! P${formatPlayerNumber(winner.id)} is the winner! You receive ${formatCurrency(winningBet.potentialPayout)}.`, `Wager returned. Final Balance: ${formatCurrency(bettingBalance)}`);
+                unlockAchievement('firstWinBet');
+                if (!isGameModified && winningBet.initialRound <= 3) {
+                unlockAchievement('betEarlyWinner');
+            }
+                currentBets = [];
+                updateVipTab();
+        }
+
+        if (!isGameModified) {
+            if (winner.id < 10) unlockAchievement('underdogWinner');
+            if (winner.isEasterEgg) unlockAchievement('canonWinner');
+            if (winner.age >= 80) unlockAchievement('goldenYears');
+            if (winner.debt >= 2500000) unlockAchievement('debtFree');
+        }
+        
+        const eliminatedFinalists = players.filter(p => p.wasFinalistWhenEliminated && p.id !== winner.id);
+        const finalistIds = eliminatedFinalists.map(p => p.id);
+
+        logEvent(`P${formatPlayerNumber(winner.id)} (${winner.name || ''}) IS THE WINNER OF SQUID GAME (Game #${currentGameNumber})!`);
+        
+        saveCompletedGameRecord({
+            winnerId: winner.id,
+            winnerName: winner.name || `P${formatPlayerNumber(winner.id)}`,
+            finalistIds: finalistIds
+        });
+
+        displayWinnerHistory();
+
+    } else if (playerCount > 1 && playerCount <= 3) {
+        logEvent(`Players ${activePlayers.map(p => `P${formatPlayerNumber(p.id)} (${p.name || ''})`).join(', ')} are FINALISTS (Game #${currentGameNumber}).`);
+        activePlayers.forEach(player => { if (!player.confirmedFinalist) player.isFinalist = true; });
+    } else if (playerCount === 0 && players.length > 0) { 
+        const lastPlayerOut = players.find(p => p.eliminationRound === round || p.roundVotedOut > 0 );
+        if (lastPlayerOut && lastPlayerOut.votedOut && lastPlayerOut.roundVotedOut !== 'Escaped') return;
+        
+        logEvent(`All players are out in Game #${currentGameNumber}! No winner.`);
+        
+        saveCompletedGameRecord({
+            winnerId: null, winnerName: null, finalistIds: []
+        });
+
+        displayWinnerHistory();
+    }
+    updateAllPlayerDivs();
+}
+
+function displayWinnerHistory() {
+    populatePreviousWinnersDropdown(); // Update the dropdown with latest winners
+    const historyContainer = document.getElementById('winnerHistoryContainer');
+    const historyList = document.getElementById('winnerHistoryList');
+    historyList.innerHTML = ''; 
+
+    if (allGamesHistory.length === 0) {
+        historyContainer.style.display = 'none';
+        return;
+    }
+    historyContainer.style.display = 'block';
+
+    allGamesHistory.forEach(gameRecord => { 
+        const listItem = document.createElement('li');
+        let text = `<button onclick="viewArchivedGame(${gameRecord.gameNumber})">View Game</button>
+                    <strong>Game #${gameRecord.gameNumber}</strong> (${gameRecord.startingPlayers} started): `;
+        
+        if (gameRecord.specialOutcome) {
+            text += `<strong>${gameRecord.winnerName}</strong>. ${gameRecord.specialOutcome}<br>`;
+            text += `Survivors (${gameRecord.finalistIds.length}): ${gameRecord.finalistIds.map(id => createPlayerLink(id)).join(', ')}.`;
+            if(gameRecord.prizeSplit > 0) {
+                text += `<br>They split ${formatCurrency(gameRecord.fullState.currentPrizePot)}, receiving ${formatCurrency(gameRecord.prizeSplit)} each.`
+            }
+        } else if (gameRecord.winnerId) {
+            text += `Winner: ${createPlayerLink(gameRecord.winnerId)} (${gameRecord.winnerName}). `;
+            if (gameRecord.finalistIds && gameRecord.finalistIds.length > 0) {
+                text += `Other Finalists: ${gameRecord.finalistIds.map(id => createPlayerLink(id)).join(', ')}.`;
+            }
+        } else {
+            text += "No winner.";
+        }
+        listItem.innerHTML = text;
+        historyList.appendChild(listItem);
+    });
+}
+
+// NEW: Function to toggle player stats in dossier
+function togglePlayerStats(span) {
+    const detailsDiv = document.getElementById('playerCardStatsDetails');
+    const isVisible = detailsDiv.style.display === 'block';
+    detailsDiv.style.display = isVisible ? 'none' : 'block';
+    span.innerText = isVisible ? '[+]' : '[-]';
+}
+
+function showPlayerCard(playerId) {
+    const currentPlayers = isViewingHistory ? gameHistorySnapshots[document.getElementById('historySlider').value].players : players;
+    const player = currentPlayers.find(p => p.id === playerId);
+    if (!player) return;
+
+    // --- NEW PHOTO UPLOAD LOGIC ---
+    currentPlayerCardId = playerId;
+    const imgEl = document.getElementById('playerCardImg');
+    const urlInputArea = document.getElementById('playerCardUrlInputArea');
+    const urlInput = document.getElementById('playerCardUrlInput');
+    const editBtn = document.getElementById('playerCardOpenUrlInputBtn');
+    const uploadTrigger = document.getElementById('playerCardUploadTrigger');
+
+    // 1. Set the current image and input state
+    imgEl.src = customPlayerPhotos[playerId] || "https://i.imgur.com/AJ3InNO.png";
+    urlInput.value = customPlayerPhotos[playerId] || '';
+    urlInputArea.style.display = 'none';
+    editBtn.textContent = 'Edit Photo URL';
+
+    // 2. Set the click handlers for the new UI
+    uploadTrigger.onclick = () => {
+            // Use the browser's native file picker prompt here instead of the manual input
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.accept = 'image/*';
+            fileInput.style.display = 'none';
+            fileInput.onchange = (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    setGameAsModified();
+                    customPlayerPhotos[playerId] = e.target.result;
+                    imgEl.src = e.target.result;
+                    urlInput.value = e.target.result;
+                    updateAllPlayerDivs(); 
+                };
+                reader.readAsDataURL(file);
+            }
+        };
+        fileInput.click();
+    };
+
+    editBtn.onclick = () => {
+        const isVisible = urlInputArea.style.display === 'block';
+        urlInputArea.style.display = isVisible ? 'none' : 'block';
+        editBtn.textContent = isVisible ? 'Edit Photo URL' : 'Close Editor';
+    };
+
+
+    // --- END OF NEW PHOTO LOGIC ---
+    
+    const favoriteStarHTML = `<span id="playerCardFavoriteStar" class="favorite-star-toggle"></span>`;
+
+    document.getElementById('playerCardName').innerHTML = `P${formatPlayerNumber(player.id)} - ${player.name} ${favoriteStarHTML}`;
+    
+    const starEl = document.getElementById('playerCardFavoriteStar');
+    starEl.innerText = player.isFavorite ? '⭐' : '☆';
+    starEl.title = player.isFavorite ? 'Remove from Favorites' : 'Add to Favorites';
+    starEl.onclick = () => toggleFavoritePlayer(playerId);
+    
+    if (isViewingHistory || isViewingArchivedGame) {
+        starEl.style.cursor = 'not-allowed';
+        starEl.style.opacity = '0.5';
+        starEl.onclick = () => { alert("Cannot change favorites while viewing history or an archive."); };
+    }
+
+    // --- NEW: FORCE WINNER BUTTON LOGIC ---
+    const forceWinnerBtn = document.getElementById('forceWinnerBtn');
+    if (forcedWinnerId === player.id) {
+        forceWinnerBtn.innerText = 'Undo Forced Winner';
+        forceWinnerBtn.style.backgroundColor = '#ffc107'; // Yellow to show it's active
+    } else {
+        forceWinnerBtn.innerText = 'Make Forced Winner';
+        forceWinnerBtn.style.backgroundColor = '';
+    }
+    forceWinnerBtn.disabled = player.eliminated || player.votedOut;
+    forceWinnerBtn.onclick = () => {
+        if (isViewingHistory || isViewingArchivedGame) {
+            alert("Cannot change this while viewing history or an archive.");
+            return;
+        }
+        toggleForceWinner(player.id);
+    };
+
+    
+    let statusText = 'Active';
+    if (player.eliminated) {
+        statusText = `Eliminated (GR ${player.eliminationRound})`;
+    } else if (player.votedOut) {
+        const reason = player.roundVotedOut === 'Escaped' ? 'Escaped' : `Voted Out (VR ${player.roundVotedOut})`;
+        statusText = `Out of Game (${reason})`;
+    }
+    if (player.isWinner) statusText = 'WINNER';
+    else if(player.isFinalist) statusText = 'Finalist';
+    if(player.isPreviousWinner && !player.isWinner) statusText += ' (Previous Winner)';
+    document.getElementById('playerCardStatus').innerText = statusText;
+
+    document.getElementById('playerCardAge').innerText = player.age;
+    document.getElementById('playerCardGender').innerText = player.gender;
+    document.getElementById('playerCardCountry').innerText = player.country;
+    document.getElementById('playerCardOccupation').innerText = player.occupation;
+    document.getElementById('playerCardDebt').innerText = formatCurrency(player.debt);
+
+    const relationEl = document.getElementById('playerCardRelation');
+    if (player.relation) {
+        relationEl.innerHTML = `${createPlayerLink(player.relation.targetId)} (${player.relation.type})`
+    } else if (player.caretakerFor) {
+            relationEl.innerHTML = `Caretaker for ${createPlayerLink(player.caretakerFor)}`;
+    } else if (player.hasCaretaker) {
+            relationEl.innerHTML = `Cared for by ${createPlayerLink(player.hasCaretaker)}`;
+    } else {
+        relationEl.innerText = 'None';
+    }
+    // Special Condition for pregnancy
+    const specialConditionEl = document.getElementById('playerCardSpecialCondition');
+    if (player.isPregnant) {
+        specialConditionEl.textContent = 'Pregnant';
+        specialConditionEl.parentElement.style.display = 'block';
+    } else if (player.hasBaby) {
+        specialConditionEl.textContent = 'Caring for their newborn';
+        specialConditionEl.parentElement.style.display = 'block';
+    }
+    else {
+            specialConditionEl.parentElement.style.display = 'none';
+    }
+
+    document.getElementById('playerCardAllies').innerHTML = (player.allies && player.allies.length > 0) ? player.allies.map(id => createPlayerLink(id)).join(', ') : 'None';
+    document.getElementById('playerCardEnemies').innerHTML = (player.enemies && player.enemies.length > 0) ? `<span class="enemy-text">${player.enemies.map(id => createPlayerLink(id)).join(', ')}</span>` : 'None';
+    
+    document.getElementById('playerCardInjury').innerText = player.injury
+        ? `${player.injury.type} (${player.injury.roundsRemaining} round${player.injury.roundsRemaining > 1 ? 's' : ''} left)`
+        : 'None';
+    
+    const boost = player.allianceBoost || { strength: 0, agility: 0, intelligence: 0, charisma: 0, luck: 0 };
+    const displayStat = (elementId, baseStat, boostStat, injuryDebuff = false, injuryAmount = 0) => {
+        const el = document.getElementById(elementId);
+        let html = `${baseStat} `;
+        if (boostStat > 0) html += `<span class="boosted-stat">(+${boostStat})</span> `;
+        if (injuryDebuff) html += `<span class="enemy-text">(${injuryAmount > 0 ? '+' : ''}${injuryAmount})</span>`;
+        el.innerHTML = html;
+    };
+    
+    displayStat('playerCardStrength', player.baseStats.strength, boost.strength, !!player.injury, -2);
+    displayStat('playerCardAgility', player.baseStats.agility, boost.agility, !!player.injury, -2);
+    displayStat('playerCardIntelligence', player.baseStats.intelligence, boost.intelligence);
+    displayStat('playerCardCharisma', player.baseStats.charisma, boost.charisma);
+    displayStat('playerCardLuck', player.baseStats.luck, boost.luck);
+    displayStat('playerCardCowardice', player.baseStats.cowardice, 0, !!player.injury, player.injury ? player.injury.cowardiceDebuff : 0);
+    document.getElementById('playerCardGreed').innerText = player.baseStats.greed;
+    
+    const actionLogList = document.getElementById('playerCardActionLog');
+    let logHTML = player.actionLog && player.actionLog.length > 0 ? '<ul>' + player.actionLog.slice().map(log => `<li>${linkifyPlayerNumbers(log)}</li>`).join('') + '</ul>' : '<p>No specific actions logged.</p>';
+    
+    if (season2ModeActive && player.voteHistory && player.voteHistory.length > 0) {
+        logHTML += '<h6>Vote History</h6><ul>';
+        player.voteHistory.forEach(vh => {
+            logHTML += `<li>VR${vh.votingRound}: Voted ${vh.vote}</li>`;
+        });
+        logHTML += '</ul>';
+    }
+
+    actionLogList.innerHTML = logHTML;
+
+    document.getElementById('playerCardElims').innerText = player.eliminationsByPlayer || 0;
+    document.getElementById('playerCardHighestAllies').innerText = player.highestAllyCount || 0;
+
+    const debtSplitEl = document.getElementById('playerCardDebtSplit');
+    const activePlayersNow = getActivePlayers(currentPlayers);
+    
+    if (activePlayersNow.length > 0) {
+        const prizeSplit = currentPrizePot / activePlayersNow.length;
+        const remainingDebt = player.debt - prizeSplit;
+        if (remainingDebt > 0) {
+            debtSplitEl.innerHTML = `Would still have ${formatCurrency(remainingDebt)} debt.`;
+        } else {
+            debtSplitEl.innerHTML = `Would gain ${formatCurrency(Math.abs(remainingDebt))}.`;
+        }
+    } else {
+        debtSplitEl.innerText = 'N/A';
+    }
+
+    document.getElementById('playerCardStatsDetails').style.display = 'none';
+    document.querySelector('#playerCardStatsDetails').previousElementSibling.querySelector('span').innerText = '[+]';
+
+
+    document.getElementById('playerCardModal').style.display = 'flex';
+}
+
+function closePlayerCard(event) {
+    if (!event || event.target.id === 'playerCardModal') {
+        document.getElementById('playerCardModal').style.display = 'none';
+    }
+}
+
+function loadPlayerTraits(playerId) {
+    const player = players.find(p => p.id == playerId);
+    if (player) {
+        document.getElementById('traitStrength').value = player.baseStats.strength;
+        document.getElementById('traitAgility').value = player.baseStats.agility;
+        document.getElementById('traitIntelligence').value = player.baseStats.intelligence;
+        document.getElementById('traitCharisma').value = player.baseStats.charisma;
+        document.getElementById('traitLuck').value = player.baseStats.luck;
+        document.getElementById('traitCowardice').value = player.baseStats.cowardice;
+        document.getElementById('traitGreed').value = player.baseStats.greed;
+    }
+}
+
+function applyTraits() {
+    if (isViewingArchivedGame) return;
+    if(isViewingHistory) { alert("Cannot perform actions while viewing history. Please Return to Live."); return; }
+    setGameAsModified();
+    const playerId = parseInt(document.getElementById('traitPlayerId').value);
+    const player = players.find(p => p.id == playerId);
+    if (player) {
+        player.baseStats.strength = parseInt(document.getElementById('traitStrength').value) || player.baseStats.strength;
+        player.baseStats.agility = parseInt(document.getElementById('traitAgility').value) || player.baseStats.agility;
+        player.baseStats.intelligence = parseInt(document.getElementById('traitIntelligence').value) || player.baseStats.intelligence;
+        player.baseStats.charisma = parseInt(document.getElementById('traitCharisma').value) || player.baseStats.charisma;
+        player.baseStats.luck = parseInt(document.getElementById('traitLuck').value) || player.baseStats.luck;
+        player.baseStats.cowardice = parseInt(document.getElementById('traitCowardice').value) || player.baseStats.cowardice;
+        player.baseStats.greed = parseInt(document.getElementById('traitGreed').value) || player.baseStats.greed;
+        logEvent(`Traits manually updated for P${formatPlayerNumber(playerId)}.`);
+        updateLeaderboards();
+    }
+}
+
+function randomizeTraitsForSelectedPlayer() {
+    if (isViewingArchivedGame) return;
+    const playerId = parseInt(document.getElementById('traitPlayerId').value);
+    if (isNaN(playerId)) { alert("Select a player ID first."); return; }
+    document.getElementById('traitStrength').value = Math.floor(Math.random() * 10) + 1;
+    document.getElementById('traitAgility').value = Math.floor(Math.random() * 10) + 1;
+    document.getElementById('traitIntelligence').value = Math.floor(Math.random() * 10) + 1;
+    document.getElementById('traitCharisma').value = Math.floor(Math.random() * 10) + 1;
+    document.getElementById('traitLuck').value = Math.floor(Math.random() * 10) + 1;
+    document.getElementById('traitCowardice').value = Math.floor(Math.random() * 10) + 1;
+    document.getElementById('traitGreed').value = Math.floor(Math.random() * 10) + 1;
+}
+
+function createAlliance() {
+    if (isViewingArchivedGame) return;
+    if(isViewingHistory) { alert("Cannot perform actions while viewing history. Please Return to Live."); return; }
+    setGameAsModified();
+    const p1Id = parseInt(document.getElementById('allianceP1').value);
+    const p2Id = parseInt(document.getElementById('allianceP2').value);
+    if (isNaN(p1Id) || isNaN(p2Id) || p1Id === p2Id) { alert("Please enter two different valid player IDs."); return; }
+    const p1 = players.find(p => p.id === p1Id && !p.eliminated && !p.votedOut && !p.isBaby);
+    const p2 = players.find(p => p.id === p2Id && !p.eliminated && !p.votedOut && !p.isBaby);
+    if (p1 && p2) {
+        mergeAlliances(p1, p2);
+        logEvent(`An alliance has formed between P${formatPlayerNumber(p1Id)} (${p1.name}) and P${formatPlayerNumber(p2Id)} (${p2.name}).`);
+        updateAllianceStatBoosts();
+        updateAllPlayerDivs();
+    } else {
+        alert("One or both players are not active in the game.");
+    }
+}
+
+function removeAlliance() {
+    if (isViewingArchivedGame) return;
+    if(isViewingHistory) { alert("Cannot perform actions while viewing history. Please Return to Live."); return; }
+    setGameAsModified();
+    const p1Id = parseInt(document.getElementById('allianceP1').value);
+    const p2Id = parseInt(document.getElementById('allianceP2').value);
+    if (isNaN(p1Id) || isNaN(p2Id) || p1Id === p2Id) { alert("Please enter two different valid player IDs."); return; }
+    const p1 = players.find(p => p.id === p1Id);
+    const p2 = players.find(p => p.id === p2Id);
+
+    if (!p1 || !p2) { alert("One or both players not found."); return; }
+    if (!p1.allies.includes(p2Id) || !p2.allies.includes(p1Id)) { alert(`P${formatPlayerNumber(p1Id)} and P${formatPlayerNumber(p2Id)} are not allied.`); return; }
+
+    p1.allies = p1.allies.filter(id => id !== p2Id);
+    p2.allies = p2.allies.filter(id => id !== p1Id);
+    
+    p1.actionLog.push(`GR ${round}: Alliance with P${formatPlayerNumber(p2Id)} was broken.`);
+    p2.actionLog.push(`GR ${round}: Alliance with P${formatPlayerNumber(p1Id)} was broken.`);
+    logEvent(`The alliance between P${formatPlayerNumber(p1Id)} and P${formatPlayerNumber(p2Id)} has been broken.`);
+    
+    updateAllianceStatBoosts();
+    updateAllPlayerDivs();
+}
+
+function createEnemy(){
+    if (isViewingArchivedGame) return;
+    if(isViewingHistory) { alert("Cannot perform actions while viewing history. Please Return to Live."); return; }
+    setGameAsModified();
+    const p1Id = parseInt(document.getElementById('enemyP1').value);
+    const p2Id = parseInt(document.getElementById('enemyP2').value);
+    if (isNaN(p1Id) || isNaN(p2Id) || p1Id === p2Id) { alert("Please enter two different valid player IDs."); return; }
+    const p1 = players.find(p => p.id === p1Id && !p.eliminated && !p.votedOut && !p.isBaby);
+    const p2 = players.find(p => p.id === p2Id && !p.eliminated && !p.votedOut && !p.isBaby);
+
+    if(p1 && p2){
+        if(!p1.enemies.includes(p2Id)) p1.enemies.push(p2Id);
+        if(!p2.enemies.includes(p1Id)) p2.enemies.push(p1Id);
+        p1.actionLog.push(`GR ${round}: Became enemies with P${formatPlayerNumber(p2Id)}.`);
+        p2.actionLog.push(`GR ${round}: Became enemies with P${formatPlayerNumber(p1Id)}.`);
+        logEvent(`A rivalry has started between P${formatPlayerNumber(p1Id)} and P${formatPlayerNumber(p2Id)}!`);
+    } else {
+        alert("One or both players are not active in the game.");
+    }
+}
+
+function removeEnemy() {
+    if (isViewingArchivedGame) return;
+    if(isViewingHistory) { alert("Cannot perform actions while viewing history. Please Return to Live."); return; }
+    setGameAsModified();
+    const p1Id = parseInt(document.getElementById('enemyP1').value);
+    const p2Id = parseInt(document.getElementById('enemyP2').value);
+    if (isNaN(p1Id) || isNaN(p2Id) || p1Id === p2Id) { alert("Please enter two different valid player IDs."); return; }
+    const p1 = players.find(p => p.id === p1Id);
+    const p2 = players.find(p => p.id === p2Id);
+
+    if (!p1 || !p2) { alert("One or both players not found."); return; }
+    if (!p1.enemies.includes(p2Id) || !p2.enemies.includes(p1Id)) { alert(`P${formatPlayerNumber(p1Id)} and P${formatPlayerNumber(p2Id)} are not enemies.`); return; }
+
+    p1.enemies = p1.enemies.filter(id => id !== p2Id);
+    p2.enemies = p2.enemies.filter(id => id !== p1Id);
+
+    p1.actionLog.push(`GR ${round}: Made up with enemy P${formatPlayerNumber(p2Id)}.`);
+    p2.actionLog.push(`GR ${round}: Made up with enemy P${formatPlayerNumber(p1Id)}.`);
+    logEvent(`P${formatPlayerNumber(p1Id)} and P${formatPlayerNumber(p2Id)} have made up.`);
+}
+
+function createRelation() {
+    if (isViewingArchivedGame) return;
+    setGameAsModified();
+    const p1Id = parseInt(document.getElementById('relationP1').value);
+    const p2Id = parseInt(document.getElementById('relationP2').value);
+    const type = document.getElementById('relationType').value;
+
+    if (isNaN(p1Id) || isNaN(p2Id) || p1Id === p2Id) {
+        alert("Please enter two different, valid player IDs.");
+        return;
+    }
+
+    const p1 = players.find(p => p.id === p1Id && !p.eliminated && !p.votedOut);
+    const p2 = players.find(p => p.id === p2Id && !p.eliminated && !p.votedOut);
+
+    if (!p1 || !p2) {
+        alert("One or both players not found or not active.");
+        return;
+    }
+    if (p1.relation || p2.relation) {
+        alert("One or both players already have a special relation.");
+        return;
+    }
+
+    // Gender and age validation
+    const validation = {
+        'Mother': { p1Gender: 'Female', p2Gender: null, ageDiff: (p1.age > p2.age + 16) },
+        'Father': { p1Gender: 'Male', p2Gender: null, ageDiff: (p1.age > p2.age + 16) },
+        'Daughter': { p1Gender: 'Female', p2Gender: null, ageDiff: (p2.age > p1.age + 16) },
+        'Son': { p1Gender: 'Male', p2Gender: null, ageDiff: (p2.age > p1.age + 16) },
+        'Wife': { p1Gender: 'Female', p2Gender: 'Male', ageDiff: true },
+        'Husband': { p1Gender: 'Male', p2Gender: 'Female', ageDiff: true },
+        'Friend': { p1Gender: null, p2Gender: null, ageDiff: true }
+    };
+
+    const rule = validation[type];
+    if (rule) {
+        if (rule.p1Gender && p1.gender !== rule.p1Gender) {
+            alert(`Error: Player 1 (P${p1Id}) must be ${rule.p1Gender} to be a ${type}.`);
+            return;
+        }
+        if (rule.p2Gender && p2.gender !== rule.p2Gender) {
+            alert(`Error: Player 2 (P${p2Id}) must be ${rule.p2Gender} for P${p1Id} to be a ${type}.`);
+            return;
+        }
+        if (!rule.ageDiff) {
+            alert(`Age gap is not realistic for a ${type} relation.`);
+            return;
+        }
+    }
+    
+    let p2Type;
+    switch (type) {
+        case 'Mother': p2Type = p2.gender === 'Male' ? 'Son' : 'Daughter'; break;
+        case 'Father': p2Type = p2.gender === 'Male' ? 'Son' : 'Daughter'; break;
+        case 'Daughter': p2Type = p2.gender === 'Male' ? 'Father' : 'Mother'; break;
+        case 'Son': p2Type = p2.gender === 'Male' ? 'Father' : 'Mother'; break;
+        case 'Wife': p2Type = 'Husband'; break;
+        case 'Husband': p2Type = 'Wife'; break;
+        case 'Friend': p2Type = 'Friend'; break;
+    }
+
+    p1.relation = { type: type, targetId: p2.id };
+    p2.relation = { type: p2Type, targetId: p1.id };
+    mergeAlliances(p1, p2);
+
+    logEvent(`A relationship has been manually set: ${createPlayerLink(p1.id)} is now the ${type} of ${createPlayerLink(p2.id)}.`);
+    alert(`Relationship created successfully!`);
+}
+
+function removeRelation() {
+    if (isViewingArchivedGame) return;
+    setGameAsModified();
+    const p1Id = parseInt(document.getElementById('removeRelationP1').value);
+    if (isNaN(p1Id)) {
+        alert("Please enter a valid player ID.");
+        return;
+    }
+    const p1 = players.find(p => p.id === p1Id);
+    if (!p1) { alert(`Player ${formatPlayerNumber(p1Id)} not found.`); return; }
+    if (!p1.relation) { alert(`Player ${formatPlayerNumber(p1Id)} has no special relation to remove.`); return; }
+    
+    const p2Id = p1.relation.targetId;
+    const p2 = players.find(p => p.id === p2Id);
+    
+    p1.relation = null;
+    if(p2) p2.relation = null;
+    
+    logEvent(`The special relationship between ${createPlayerLink(p1.id)} and ${createPlayerLink(p2Id)} has been removed.`);
+    alert("Relationship removed.")
+}
+
+function removePregnancy() {
+    if (isViewingArchivedGame) return;
+    setGameAsModified();
+    const playerId = parseInt(document.getElementById('pregnantPlayerId').value);
+    if (isNaN(playerId)) {
+        alert("Please enter a valid Player ID.");
+        return;
+    }
+    const player = players.find(p => p.id === playerId);
+    if (!player) { alert(`Player ${formatPlayerNumber(playerId)} not found.`); return; }
+    if (!player.isPregnant) { alert(`Player ${formatPlayerNumber(playerId)} is not pregnant.`); return; }
+
+    player.isPregnant = false;
+    player.protection = Math.max(0, player.protection - 1);
+    
+    // Remove from superpowered list only if they have 0 protection and no other reason to be there
+    if (player.protection === 0 && !personalityPlayers.has(player.id)) {
+        superpoweredPlayerIds.delete(player.id);
+    }
+
+    logEvent(`Pregnancy was manually removed from ${createPlayerLink(player.id)}.`);
+    alert(`Pregnancy removed from Player ${formatPlayerNumber(playerId)}.`);
+    updateAllPlayerDivs();
+    updateSuperpowerList();
+}
+
+function makePlayerPregnant() {
+    if (isViewingArchivedGame) return;
+    setGameAsModified();
+    const playerId = parseInt(document.getElementById('pregnantPlayerId').value);
+    if (isNaN(playerId)) {
+        alert("Please enter a valid Player ID.");
+        return;
+    }
+
+    const player = players.find(p => p.id === playerId && !p.eliminated && !p.votedOut);
+    if (!player) {
+        alert(`Active player P${formatPlayerNumber(playerId)} not found.`);
+        return;
+    }
+
+    if (player.gender !== 'Female') {
+        alert(`Error: Player ${formatPlayerNumber(playerId)} is not female and cannot be made pregnant.`);
+        return;
+    }
+
+    if (player.isPregnant) {
+        alert(`Player ${formatPlayerNumber(playerId)} is already pregnant.`);
+        return;
+    }
+    
+    player.isPregnant = true;
+    player.protection += 1;
+    superpoweredPlayerIds.add(player.id);
+    
+    logEvent(`${createPlayerLink(player.id)} was manually made pregnant and has received protection.`);
+    alert(`Player ${formatPlayerNumber(playerId)} is now pregnant!`);
+    updateAllPlayerDivs();
+    updateSuperpowerList();
+}
+
+function mergeAlliances(player1, player2) {
+    if (!player1 || !player2 || player1.allies.includes(player2.id)) return;
+    
+    // Find existing group IDs and their colors before the merge
+    let oldGroupIds = [];
+    if (player1.allies.length > 0) oldGroupIds.push([player1.id, ...player1.allies].sort((a,b) => a-b).join('-'));
+    if (player2.allies.length > 0) oldGroupIds.push([player2.id, ...player2.allies].sort((a,b) => a-b).join('-'));
+    
+    const existingColor = oldGroupIds.map(id => persistentGroupColors[id]).find(color => color);
+    
+    // Form the new merged group
+    const group = new Set([player1.id, player2.id, ...player1.allies, ...player2.allies]);
+    
+    group.forEach(memberId => {
+        const member = players.find(p => p.id === memberId);
+        if(member) {
+            const otherMembers = [...group].filter(id => id !== memberId);
+            const newAllies = otherMembers.filter(id => !member.allies.includes(id));
+            newAllies.forEach(newAllyId => {
+                if (member.actionLog) member.actionLog.push(`(Formed alliance with P${formatPlayerNumber(newAllyId)})`);
+            });
+            member.allies = otherMembers;
+            updateHighestAllyCount(member);
+        }
+    });
+    
+    // If there was an existing color, apply it to the new super-group
+    if (existingColor) {
+        const newGroupId = [...group].sort((a,b) => a-b).join('-');
+        persistentGroupColors[newGroupId] = existingColor;
+    }
+
+    // Clean up old, smaller groups from persistent memory
+    oldGroupIds.forEach(id => delete persistentGroupColors[id]);
+}
+
+
+function updateAllianceStatBoosts() {
+    players.forEach(p => {
+        p.allianceBoost = { strength: 0, agility: 0, intelligence: 0, charisma: 0, luck: 0 };
+        if (!p.eliminated && !p.votedOut) {
+            if (p.allies) {
+                p.allies = p.allies.filter(allyId => {
+                    const allyIsActive = players.some(player => player.id === allyId && !player.eliminated && !player.votedOut);
+                    if (!allyIsActive && p.allies.includes(allyId)) {
+                            if(p.actionLog) p.actionLog.push(`(Ally P${formatPlayerNumber(allyId)} was eliminated).`);
+                    }
+                    return allyIsActive;
+                });
+                const boostAmount = p.allies.length * 2;
+                p.allianceBoost.strength = boostAmount;
+                p.allianceBoost.agility = boostAmount;
+                p.allianceBoost.intelligence = boostAmount;
+                p.allianceBoost.charisma = boostAmount;
+                p.allianceBoost.luck = boostAmount;
+            }
+                if (p.enemies) {
+                p.enemies = p.enemies.filter(enemyId => players.some(player => player.id === enemyId && !player.eliminated && !player.votedOut));
+                }
+        }
+    });
+    updateLeaderboards();
+}
+
+function updateRelationships() {
+    const activePlayers = getActivePlayers();
+    
+    // --- NEW: Ally Betrayal Logic ---
+    let processedPairs = new Set();
+    activePlayers.forEach(p => {
+        if (!p.allies) return;
+        [...p.allies].forEach(allyId => {
+            const pairKey = [p.id, allyId].sort().join('-');
+            if (processedPairs.has(pairKey)) return;
+            processedPairs.add(pairKey);
+
+            if (Math.random() < 0.01) {
+                const ally = players.find(player => player.id === allyId);
+                if (!ally || ally.eliminated || ally.votedOut) return;
+
+                p.allies = p.allies.filter(id => id !== allyId);
+                ally.allies = ally.allies.filter(id => id !== p.id);
+
+                if(!p.enemies.includes(allyId)) p.enemies.push(allyId);
+                if(!ally.enemies.includes(p.id)) ally.enemies.push(p.id);
+
+                const logMsg = `Betrayal! ${createPlayerLink(p.id)}'s ally, ${createPlayerLink(ally.id)}, has turned against them!`;
+                logEvent(logMsg);
+                p.actionLog.push(`Event: Betrayed by ally ${createPlayerLink(ally.id)}.`);
+                ally.actionLog.push(`Event: Turned on former ally ${createPlayerLink(p.id)}.`);
+            }
+        });
+    });
+    
+    let newAllianceLogs = [];
+    let newEnemyLogs = [];
+    let processedPlayerIds = new Set();
+    
+    activePlayers.forEach(p => {
+        if (processedPlayerIds.has(p.id)) return;
+
+        if (p.allies.length < 2 && Math.random() < getEffectiveStat(p, 'charisma') / 80) {
+            let potentialAllies = activePlayers.filter(other => 
+                other.id !== p.id && !p.allies.includes(other.id) && !p.enemies.includes(other.id) && !processedPlayerIds.has(other.id)
+            );
+            if (potentialAllies.length > 0) {
+                const newAlly = potentialAllies[Math.floor(Math.random() * potentialAllies.length)];
+                newAllianceLogs.push(`P${formatPlayerNumber(p.id)} & P${formatPlayerNumber(newAlly.id)}`);
+                mergeAlliances(p, newAlly);
+                processedPlayerIds.add(p.id);
+                processedPlayerIds.add(newAlly.id);
+                return; 
+            }
+        }
+
+            if (Math.random() < (getEffectiveStat(p, 'greed') - getEffectiveStat(p, 'charisma') + getEffectiveStat(p, 'cowardice')) / 100) {
+                let potentialEnemies = activePlayers.filter(other => 
+                other.id !== p.id && !p.allies.includes(other.id) && !p.enemies.includes(other.id) && !processedPlayerIds.has(other.id)
+            );
+                if (potentialEnemies.length > 0) {
+                const newEnemy = potentialEnemies[Math.floor(Math.random() * potentialEnemies.length)];
+                if(!p.enemies.includes(newEnemy.id)) p.enemies.push(newEnemy.id);
+                if(!newEnemy.enemies.includes(p.id)) newEnemy.enemies.push(p.id);
+                
+                p.actionLog.push(`GR ${round}: Became enemies with P${formatPlayerNumber(newEnemy.id)}.`);
+                newEnemy.actionLog.push(`GR ${round}: Became enemies with P${formatPlayerNumber(p.id)}.`);
+                newEnemyLogs.push(`P${formatPlayerNumber(p.id)} vs P${formatPlayerNumber(newEnemy.id)}`);
+                processedPlayerIds.add(p.id);
+                processedPlayerIds.add(newEnemy.id);
+                }
+        }
+    });
+
+    if (newAllianceLogs.length > 0) {
+        logEvent(`${newAllianceLogs.length} new alliance(s) have formed.`, `New Pairs: ${newAllianceLogs.join('; ')}`);
+    }
+    if (newEnemyLogs.length > 0) {
+        logEvent(`${newEnemyLogs.length} new rivalr(y/ies) have started.`, `New Enemies: ${newEnemyLogs.join('; ')}`);
+    }
+    
+    updateAllianceStatBoosts();
+}
+
+function frontManIntervention() {
+        const activePlayers = getActivePlayers().filter(p => p.id !== player001VIP_Id);
+        if (activePlayers.length > 0) {
+            const unluckyPlayer = activePlayers[Math.floor(Math.random() * activePlayers.length)];
+            unluckyPlayer.eliminated = true;
+            unluckyPlayer.eliminationRound = round;
+            playSound('elimination');
+            logEvent(`FRONT MAN INTERVENTION: P${formatPlayerNumber(unluckyPlayer.id)} (${unluckyPlayer.name}) was eliminated for breaking the spirit of the game.`);
+            currentPrizePot += 100000;
+            updateAllianceStatBoosts();
+            
+            eliminationOrder.push({ isHeader: true, round: round, text: `Event: Front Man Intervention` });
+            handleEliminationProcessing([unluckyPlayer], "was eliminated by the Front Man", false, "Front Man Intervention");
+        }
+}
+
+function handleTugOfWar() {
+    if (!preRoundUpdate()) return;
+    let activePlayers = getActivePlayers();
+    if (activePlayers.length < 2) {
+        logEvent(`GR ${round} (Tug of War): Not enough players to form two teams.`);
+        updateCounters(); return;
+    }
+    
+    eliminationOrder.push({ isHeader: true, round: round, text: `GR ${round}: Tug of War` });
+    
+    let teamA = [], teamB = [];
+    let sortedPlayers = [...activePlayers].sort((a,b) => b.allies.length - a.allies.length);
+    let assignedIds = new Set();
+    
+    sortedPlayers.forEach(p => {
+        if (assignedIds.has(p.id)) return;
+        const allianceGroup = [p, ...p.allies.map(id => players.find(ally => ally.id === id)).filter(Boolean)];
+        const uniqueAllianceMembers = [...new Set(allianceGroup)].filter(ap => !assignedIds.has(ap.id));
+        if (teamA.length <= teamB.length) teamA.push(...uniqueAllianceMembers);
+        else teamB.push(...uniqueAllianceMembers);
+        uniqueAllianceMembers.forEach(member => assignedIds.add(member.id));
+    });
+
+    while (teamA.length > teamB.length + 1) teamB.push(teamA.pop());
+    while (teamB.length > teamA.length + 1) teamA.push(teamB.pop());
+
+    if (teamA.length === 0 || teamB.length === 0) {
+        logEvent(`GR ${round} (Tug of War): Could not form two viable teams.`); return;
+    }
+
+    let teamAStrength = teamA.reduce((sum, p) => sum + getEffectiveStat(p, 'strength') + getEffectiveStat(p, 'luck') / 2, 0) * (Math.random() * 0.4 + 0.8);
+    let teamBStrength = teamB.reduce((sum, p) => sum + getEffectiveStat(p, 'strength') + getEffectiveStat(p, 'luck') / 2, 0) * (Math.random() * 0.4 + 0.8);
+
+    let [winningTeam, losingTeam] = teamAStrength >= teamBStrength ? [teamA, teamB] : [teamB, teamA];
+    let [winningTeamName, losingTeamName] = teamAStrength >= teamBStrength ? ['Team A', 'Team B'] : ['Team B', 'Team A'];
+    
+    const survivorOnLosingTeam = losingTeam.find(p => checkSurvivalMechanics(p, "Tug of War"));
+    if (survivorOnLosingTeam) {
+        logEvent(`${createPlayerLink(survivorOnLosingTeam.id)}'s special survival saved their ENTIRE TEAM from failing Tug of War!`);
+        let temp = winningTeam;
+        winningTeam = losingTeam;
+        losingTeam = temp;
+        temp = winningTeamName;
+        winningTeamName = losingTeamName;
+        losingTeamName = temp;
+    }
+
+    const teamA_details_list = teamA.map(p => `P${formatPlayerNumber(p.id)}`).join(', ');
+    const teamB_details_list = teamB.map(p => `P${formatPlayerNumber(p.id)}`).join(', ');
+    const winnerStrength = (winningTeamName === 'Team A' ? teamAStrength: teamBStrength).toFixed(0);
+    const loserStrength = (losingTeamName === 'Team A' ? teamAStrength : teamBStrength).toFixed(0);
+    const details = `<b>Team A (${teamA.length} players)</b>: ${teamA_details_list}<br><b>Team B (${teamB.length} players)</b>: ${teamB_details_list}<hr>${winningTeamName} (Effective Str ${winnerStrength}) defeats ${losingTeamName} (Effective Str ${loserStrength}).${survivorOnLosingTeam ? ` Thanks to ${createPlayerLink(survivorOnLosingTeam.id)}!` : ''}`;
+    
+    winningTeam.forEach(s => s.actionLog.push(`GR ${round}: Passed Tug of War on ${winningTeamName}.`));
+    losingTeam.forEach(loser => loser.actionLog.push(`GR ${round}: Failed Tug of War on ${losingTeamName}.`));
+
+    let eliminatedThisRound = [...losingTeam];
+    
+    if (animationModeEnabled) {
+            toggleAnimationMode();
+            playersToEliminateInAnimation = eliminatedThisRound.map(p => p.id);
+            animatedEliminationIndex = 0;
+            processNextAnimatedElimination(`lost Tug of War.`);
+    } else {
+        handleEliminationProcessing(eliminatedThisRound, `lost Tug of War.`, false, 'Tug of War', false, false, details);
+    }
+}
+
+    function handleDodgeball() {
+    if (!preRoundUpdate()) return;
+    let activePlayers = getActivePlayers();
+    if (activePlayers.length < 2) {
+        logEvent(`GR ${round} (Dodgeball): Not enough players for two teams.`);
+        updateCounters(); return;
+    }
+    
+    eliminationOrder.push({ isHeader: true, round: round, text: `GR ${round}: Dodgeball` });
+
+    let shuffled = [...activePlayers].sort(() => 0.5 - Math.random());
+    const midPoint = Math.ceil(shuffled.length / 2);
+    const teamRed = shuffled.slice(0, midPoint);
+    const teamBlue = shuffled.slice(midPoint);
+
+    teamRed.forEach(p => p.gameRole = 'Red');
+    teamBlue.forEach(p => p.gameRole = 'Blue');
+    
+    let details = `<b>Red Team:</b> ${teamRed.map(p => `P${formatPlayerNumber(p.id)}`).join(', ')}<br><b>Blue Team:</b> ${teamBlue.map(p => `P${formatPlayerNumber(p.id)}`).join(', ')}<hr>`;
+
+    activePlayers.forEach(p => {
+        p.survivalScore = (getEffectiveStat(p, 'agility') * 1.5) + getEffectiveStat(p, 'strength') + (getEffectiveStat(p, 'luck') / 2) + (Math.random() * 5);
+    });
+
+    activePlayers.sort((a,b) => a.survivalScore - b.survivalScore);
+    const numToEliminate = Math.floor(activePlayers.length * 0.5);
+    
+    let eliminatedThisRound = [];
+    let toEliminate = activePlayers.slice(0, numToEliminate);
+
+    toEliminate.forEach(p => {
+        if (!checkSurvivalMechanics(p, "Dodgeball")) {
+            eliminatedThisRound.push(p);
+        }
+    });
+
+    const survivors = activePlayers.filter(p => !eliminatedThisRound.some(e => e.id === p.id));
+    
+    eliminatedThisRound.forEach(eliminatedPlayer => {
+        const opposingTeam = eliminatedPlayer.gameRole === 'Red' ? 'Blue' : 'Red';
+        const survivingOpponents = survivors.filter(s => s.gameRole === opposingTeam);
+        
+        let hitter = null;
+        if (survivingOpponents.length > 0) {
+            let enemiesOnOpposingTeam = survivingOpponents.filter(s => s.enemies.includes(eliminatedPlayer.id));
+            if (enemiesOnOpposingTeam.length > 0 && Math.random() < 0.7) { 
+                hitter = enemiesOnOpposingTeam[Math.floor(Math.random() * enemiesOnOpposingTeam.length)];
+            } else {
+                hitter = survivingOpponents[Math.floor(Math.random() * survivingOpponents.length)];
+            }
+        }
+
+        if(hitter){
+            creditElimination(hitter.id, eliminatedPlayer.id);
+            eliminatedPlayer.actionLog.push(`GR ${round}: Was hit by P${formatPlayerNumber(hitter.id)} in Dodgeball (Team ${eliminatedPlayer.gameRole}).`);
+            hitter.actionLog.push(`GR ${round}: Hit P${formatPlayerNumber(eliminatedPlayer.id)} in Dodgeball (Team ${hitter.gameRole}).`);
+            details += `P${formatPlayerNumber(hitter.id)} (${hitter.gameRole}) hit P${formatPlayerNumber(eliminatedPlayer.id)} (${eliminatedPlayer.gameRole}).<br>`;
+        } else {
+                eliminatedPlayer.actionLog.push(`GR ${round}: Was hit by an unknown opponent in Dodgeball (Team ${eliminatedPlayer.gameRole}).`);
+                details += `P${formatPlayerNumber(eliminatedPlayer.id)} (${eliminatedPlayer.gameRole}) was hit.<br>`;
+        }
+    });
+
+    survivors.forEach(s => {
+            if (!s.actionLog.some(log => log.includes(`GR ${round}:`))) {
+                s.actionLog.push(`GR ${round}: Survived Dodgeball (Team ${s.gameRole}).`);
+            }
+    });
+    
+    if (animationModeEnabled) {
+            toggleAnimationMode();
+            playersToEliminateInAnimation = eliminatedThisRound.map(p => p.id);
+            animatedEliminationIndex = 0;
+            processNextAnimatedElimination(`were hit in Dodgeball.`);
+    } else {
+        handleEliminationProcessing(eliminatedThisRound, `were hit in Dodgeball.`, false, 'Dodgeball', false, false, details);
+    }
+}
+
+
+function handleHotPotato() {
+    if (!preRoundUpdate()) return;
+    let activePlayers = getActivePlayers();
+    if (activePlayers.length < 2) {
+        logEvent(`GR ${round} (Hot Potato): Not enough players.`);
+        updateCounters(); return;
+    }
+    
+    eliminationOrder.push({ isHeader: true, round: round, text: `GR ${round}: Hot Potato` });
+
+    const numToEliminate = Math.floor(activePlayers.length * 0.75);
+    if (numToEliminate === 0) {
+            logEvent(`GR ${round} (Hot Potato): No one was eliminated.`);
+            return;
+    }
+
+    activePlayers.forEach(p => {
+        p.eliminationRisk = 50 - (getEffectiveStat(p, 'luck') * 2.5);
+        p.randomSortKey = Math.random(); 
+    });
+    
+    let sortedForElim = [...activePlayers].sort((a, b) => b.eliminationRisk - a.eliminationRisk || a.randomSortKey - b.randomSortKey);
+    
+    const eliminatedThisRound = [];
+    let toEliminate = sortedForElim.slice(0, numToEliminate);
+
+    toEliminate.forEach(p => {
+            if (!checkSurvivalMechanics(p, "Hot Potato")) {
+            eliminatedThisRound.push(p);
+        }
+    });
+
+    let details = "Elimination Details:<br>";
+    const survivors = activePlayers.filter(p => !eliminatedThisRound.some(e => e.id === p.id));
+
+    eliminatedThisRound.forEach(eliminatedPlayer => {
+        let potentialPassers = survivors.filter(p => p.id !== eliminatedPlayer.id);
+
+        if(potentialPassers.length > 0){
+            const passerObjects = [];
+            const passerWeights = [];
+
+            potentialPassers.forEach(passer => {
+                let animosityScore = 20;
+                if (passer.enemies.includes(eliminatedPlayer.id)) animosityScore += 100;
+                if (passer.allies.includes(eliminatedPlayer.id)) animosityScore = Math.max(1, animosityScore - 50); 
+                animosityScore += getEffectiveStat(passer, 'greed') * 1.5;
+                passerObjects.push(passer);
+                passerWeights.push(animosityScore);
+            });
+
+            const bestPasser = getWeightedRandom(passerObjects, passerWeights);
+
+            if (bestPasser) {
+                creditElimination(bestPasser.id, eliminatedPlayer.id);
+                eliminatedPlayer.actionLog.push(`GR ${round}: Was passed the final potato by P${formatPlayerNumber(bestPasser.id)}.`);
+                bestPasser.actionLog.push(`GR ${round}: Passed the final potato to P${formatPlayerNumber(eliminatedPlayer.id)}.`);
+                details += `P${formatPlayerNumber(eliminatedPlayer.id)} was eliminated by a potato from P${formatPlayerNumber(bestPasser.id)}.<br>`;
+            } else {
+                    eliminatedPlayer.actionLog.push(`GR ${round}: Was left with the potato at the end.`);
+                    details += `P${formatPlayerNumber(eliminatedPlayer.id)} was left holding the potato.<br>`;
+            }
+        } else {
+                eliminatedPlayer.actionLog.push(`GR ${round}: Was left with the potato at the end.`);
+                details += `P${formatPlayerNumber(eliminatedPlayer.id)} was left holding the potato.<br>`;
+        }
+    });
+    
+    survivors.forEach(s => {
+            if (!s.actionLog.some(log => log.includes(`GR ${round}:`))) {
+                s.actionLog.push(`GR ${round}: Passed Hot Potato.`);
+            }
+    });
+    
+    if (animationModeEnabled) {
+            toggleAnimationMode();
+            playersToEliminateInAnimation = eliminatedThisRound.map(p => p.id);
+            animatedEliminationIndex = 0;
+            processNextAnimatedElimination(`failed Hot Potato.`);
+    } else {
+        handleEliminationProcessing(eliminatedThisRound, `failed Hot Potato.`, false, 'Hot Potato', false, false, details);
+    }
+}
+
+function handleMarbles() {
+    if (!preRoundUpdate()) return;
+    let activePlayers = getActivePlayers();
+    if (activePlayers.length < 2) {
+        logEvent(`GR ${round} (Marbles): Not enough players to form a pair.`);
+        updateCounters(); return;
+    }
+    
+    eliminationOrder.push({ isHeader: true, round: round, text: `GR ${round}: Marbles` });
+
+    let assignedPlayerIds = new Set();
+    let pairs = [];
+    
+    activePlayers.forEach(p => {
+        if (assignedPlayerIds.has(p.id)) return;
+        const potentialAllies = p.allies.map(id => players.find(ally => ally.id === id && !assignedPlayerIds.has(id) && !ally.eliminated && !ally.votedOut)).filter(Boolean);
+        if (potentialAllies.length > 0 && Math.random() < 0.80) {
+            const partner = potentialAllies[0];
+            pairs.push([p, partner]);
+            assignedPlayerIds.add(p.id);
+            assignedPlayerIds.add(partner.id);
+        }
+    });
+
+    let unassignedPlayers = activePlayers.filter(p => !assignedPlayerIds.has(p.id));
+    unassignedPlayers.sort(() => 0.5 - Math.random());
+    
+    while (unassignedPlayers.length >= 2) {
+        pairs.push([unassignedPlayers.pop(), unassignedPlayers.pop()]);
+    }
+    
+    let eliminatedThisRound = [];
+    let details = "Pairings and Results:<br>";
+    
+        pairs.forEach(([p1, p2]) => {
+        if (Math.random() < 0.02) {
+            if (!checkSurvivalMechanics(p1, "Marbles")) eliminatedThisRound.push(p1);
+            if (!checkSurvivalMechanics(p2, "Marbles")) eliminatedThisRound.push(p2);
+            details += `P${formatPlayerNumber(p1.id)} & P${formatPlayerNumber(p2.id)} ran out of time. DOUBLE ELIMINATION.<br>`;
+            return;
+        }
+
+        let provisionalWinner, provisionalLoser, reason = "";
+        let betrayed = false;
+
+        // Step 1: Determine the provisional winner based on game rules (Protection -> Betrayal -> Score)
+        const p1_isProtected = p1.protection > 0 || p1.hasHint;
+        const p2_isProtected = p2.protection > 0 || p2.hasHint;
+
+        if (p1_isProtected && !p2_isProtected) {
+            provisionalWinner = p1; provisionalLoser = p2; reason = "due to protection";
+        } else if (p2_isProtected && !p1_isProtected) {
+            provisionalWinner = p2; provisionalLoser = p1; reason = "due to protection";
+        } else { // If both or neither are protected, play normally
+            const p1Allied = p1.allies.includes(p2.id);
+            if (p1Allied) {
+                if (getEffectiveStat(p1, 'greed') > getEffectiveStat(p2, 'greed') + 3 && Math.random() < getEffectiveStat(p1, 'greed') / 15) {
+                    provisionalWinner = p1; provisionalLoser = p2; betrayed = true;
+                } else if (getEffectiveStat(p2, 'greed') > getEffectiveStat(p1, 'greed') + 3 && Math.random() < getEffectiveStat(p2, 'greed') / 15) {
+                    provisionalWinner = p2; provisionalLoser = p1; betrayed = true;
+                }
+            }
+
+            if (!provisionalWinner) { // if not decided by betrayal
+                const p1Score = getEffectiveStat(p1, 'intelligence') + getEffectiveStat(p1, 'luck') * 1.5 + Math.random() * 5;
+                const p2Score = getEffectiveStat(p2, 'intelligence') + getEffectiveStat(p2, 'luck') * 1.5 + Math.random() * 5;
+                provisionalWinner = p1Score >= p2Score ? p1 : p2;
+                provisionalLoser = p1Score < p2Score ? p1 : p2;
+            }
+            reason = betrayed ? "by betrayal" : "";
+        }
+
+        // Step 2: Check if the provisional loser is saved by a higher power (like being the forced winner).
+        if (checkSurvivalMechanics(provisionalLoser, "Marbles")) {
+            // The loser survived! This means the winner must be eliminated instead.
+            const actualWinner = provisionalLoser;
+            const actualLoser = provisionalWinner;
+            
+            details += `P${formatPlayerNumber(p1.id)} vs P${formatPlayerNumber(p2.id)} -> An upset! P${formatPlayerNumber(actualWinner.id)} survives against the odds, eliminating P${formatPlayerNumber(actualLoser.id)}.<br>`;
+            eliminatedThisRound.push(actualLoser);
+            
+            actualWinner.actionLog.push(`GR ${round}: Survived Marbles against P${formatPlayerNumber(actualLoser.id)} due to a special intervention.`);
+            actualLoser.actionLog.push(`GR ${round}: Lost Marbles against P${formatPlayerNumber(actualWinner.id)} after their win was overridden.`);
+        } else {
+            // The provisional outcome is final.
+            const actualWinner = provisionalWinner;
+            const actualLoser = provisionalLoser;
+
+            creditElimination(actualWinner.id, actualLoser.id);
+            eliminatedThisRound.push(actualLoser);
+
+            // Consume protection of the winner if the win was because of it.
+            if (reason === "due to protection") {
+                checkSurvivalMechanics(actualWinner, "Marbles");
+            }
+            
+            actualWinner.actionLog.push(`GR ${round}: Won Marbles against P${formatPlayerNumber(actualLoser.id)} ${reason}.`);
+            actualLoser.actionLog.push(`GR ${round}: Lost Marbles against P${formatPlayerNumber(actualWinner.id)} ${reason}.`);
+            details += `P${formatPlayerNumber(p1.id)} vs P${formatPlayerNumber(p2.id)} -> P${formatPlayerNumber(actualWinner.id)} wins${betrayed ? ' (Betrayal!)':''}.<br>`;
+        }
+    });
+    
+    const survivors = activePlayers.filter(p => !eliminatedThisRound.some(e => e.id === p.id));
+    unassignedPlayers.forEach(s => {
+            s.actionLog.push(`GR ${round}: Survived Marbles due to no partner.`);
+            details += `P${formatPlayerNumber(s.id)} (${s.name}) had no partner and survived.<br>`;
+    });
+    survivors.forEach(s => {
+            if (!s.actionLog.some(log => log.includes(`GR ${round}:`))) {
+                s.actionLog.push(`GR ${round}: Passed Marbles.`);
+            }
+    });
+    
+    if (animationModeEnabled) {
+            toggleAnimationMode();
+            playersToEliminateInAnimation = eliminatedThisRound.map(p => p.id);
+            animatedEliminationIndex = 0;
+            processNextAnimatedElimination(`lost their marbles.`);
+    } else {
+        handleEliminationProcessing(eliminatedThisRound, `lost their marbles.`, false, 'Marbles', false, false, details);
+    }
+}
+
+function handleDalgona() {
+    if (!preRoundUpdate()) return;
+    let activePlayers = getActivePlayers();
+    let eliminatedThisRound = [];
+    let details = "Shape Choices and Results:<br>";
+
+    eliminationOrder.push({ isHeader: true, round: round, text: `GR ${round}: Dalgona` });
+
+    activePlayers.forEach(p => {
+        let shape;
+        const intelBias = getEffectiveStat(p, 'intelligence') / 15;
+        if (Math.random() < intelBias) {
+            shape = Math.random() < 0.5 ? 'Circle' : 'Triangle';
+        } else {
+            shape = Math.random() < 0.5 ? 'Star' : 'Umbrella';
+        }
+        
+        let survivalChance;
+        switch(shape) {
+            case 'Circle': survivalChance = 0.90; break;
+            case 'Triangle': survivalChance = 0.80; break;
+            case 'Star': survivalChance = 0.45; break;
+            case 'Umbrella': survivalChance = 0.15; break;
+        }
+
+        survivalChance += (getEffectiveStat(p, 'agility')*1.5 + getEffectiveStat(p, 'intelligence') + getEffectiveStat(p, 'luck')/2) / 110;
+        survivalChance = Math.min(0.99, survivalChance); 
+
+        if (Math.random() > survivalChance) {
+                if (checkSurvivalMechanics(p, "Dalgona")) {
+                details += `P${formatPlayerNumber(p.id)} (${p.name}) failed the ${shape} but was protected.<br>`;
+                } else {
+                eliminatedThisRound.push(p);
+                details += `P${formatPlayerNumber(p.id)} (${p.name}) failed the ${shape}.<br>`;
+                p.actionLog.push(`GR ${round}: Failed Dalgona (Shape: ${shape}).`);
+                }
+        } else {
+                details += `P${formatPlayerNumber(p.id)} (${p.name}) passed the ${shape}.<br>`;
+                p.actionLog.push(`GR ${round}: Passed Dalgona (Shape: ${shape}).`);
+        }
+    });
+    
+    eliminatedThisRound.sort(() => Math.random() - 0.5);
+
+    if (animationModeEnabled) {
+            toggleAnimationMode();
+            playersToEliminateInAnimation = eliminatedThisRound.map(p => p.id);
+            animatedEliminationIndex = 0;
+            processNextAnimatedElimination(`failed Dalgona.`);
+    } else {
+        handleEliminationProcessing(eliminatedThisRound, `failed Dalgona.`, false, 'Dalgona', false, false, details);
+    }
+}
+
+function handlePentathlon() {
+    if (!preRoundUpdate()) return;
+    let activePlayers = getActivePlayers();
+    if (activePlayers.length === 0) { logEvent(`GR ${round} (Pentathlon): No players.`); return; }
+    
+    eliminationOrder.push({ isHeader: true, round: round, text: `GR ${round}: Pentathlon` });
+
+    activePlayers.forEach(p => p.hasFormedPentathlonAlliance = false);
+
+    let teams = [];
+    let processedPlayerIds = new Set();
+    let remainingPlayers = [...activePlayers];
+    
+    activePlayers.forEach(p => {
+        if (processedPlayerIds.has(p.id)) return;
+        const alliesAndSelf = [p, ...p.allies.map(id => players.find(player => player.id === id)).filter(Boolean)];
+        const team = alliesAndSelf.filter(player => !processedPlayerIds.has(player.id));
+        if (team.length > 1) {
+            teams.push(team);
+            team.forEach(member => processedPlayerIds.add(member.id));
+        }
+    });
+    
+    remainingPlayers = activePlayers.filter(p => !processedPlayerIds.has(p.id));
+    for (let i = remainingPlayers.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [remainingPlayers[i], remainingPlayers[j]] = [remainingPlayers[j], remainingPlayers[i]];
+    }
+    
+    teams.forEach(team => { while (team.length < 5 && remainingPlayers.length > 0) team.push(remainingPlayers.pop()); });
+    while (remainingPlayers.length > 0) teams.push(remainingPlayers.splice(0, 5));
+    
+    let avgPlayerScoreStat = activePlayers.length > 0 ? activePlayers.reduce((sum, p) => sum + getEffectiveStat(p, 'strength') + getEffectiveStat(p, 'agility') + getEffectiveStat(p, 'intelligence'), 0) / activePlayers.length : 0;
+    let teamScores = [];
+    
+    teams.forEach(team => {
+        const teamMemberStr = team.map(p => `P${formatPlayerNumber(p.id)}`).join(', ');
+        team.forEach(player => player.actionLog.push(`GR ${round}: Was on Pentathlon Team [${teamMemberStr}].`));
+        
+        let teamScore = team.reduce((sum, p) => sum + getEffectiveStat(p, 'strength') + getEffectiveStat(p, 'agility') + getEffectiveStat(p, 'intelligence'), 0);
+        if (team.length < 5) teamScore += (5 - team.length) * avgPlayerScoreStat;
+        teamScore += team.reduce((sum, p) => sum + getEffectiveStat(p, 'luck'), 0) * Math.random();
+        teamScores.push({ score: teamScore, team: team });
+    });
+
+    teamScores.sort((a,b) => a.score - b.score);
+    let percentToFail = Math.random() * (0.45 - 0.35) + 0.35; 
+    let numTeamsToFail = Math.floor(teams.length * percentToFail);
+    
+    let failingTeams = teamScores.slice(0, numTeamsToFail);
+    let passingTeams = teamScores.slice(numTeamsToFail);
+    let details = "Team Results:<br>";
+    
+    let newPassingTeams = [];
+    let newFailingTeams = [];
+
+    for(let teamData of failingTeams) {
+        const survivor = teamData.team.find(p => checkSurvivalMechanics(p, "Pentathlon"));
+        if (survivor) {
+            logEvent(`${createPlayerLink(survivor.id)}'s special survival saved their ENTIRE TEAM from failing Pentathlon!`);
+            newPassingTeams.push(teamData); 
+        } else {
+            newFailingTeams.push(teamData);
+        }
+    }
+    
+    if (newPassingTeams.length > 0 && passingTeams.length > 0) {
+        for (let i = 0; i < newPassingTeams.length; i++) {
+                if (passingTeams.length > 0) {
+                const savedTeamData = newPassingTeams[i];
+                const weakestPassingTeam = passingTeams.shift();
+                newFailingTeams.push(weakestPassingTeam);
+                details += `Team [${savedTeamData.team.map(p=>`P${p.id}`).join(',')}] was SAVED! Their failure was passed to Team [${weakestPassingTeam.team.map(p=>`P${p.id}`).join(',')}]!<br>`;
+                }
+        }
+    }
+    
+    passingTeams.push(...newPassingTeams);
+    failingTeams = newFailingTeams;
+
+    let eliminatedThisRound = [];
+    failingTeams.forEach(({team}) => {
+            details += `Team [${team.map(p => `P${formatPlayerNumber(p.id)}`).join(', ')}] FAILED.<br>`;
+            team.forEach(player => {
+            player.actionLog.push(`GR ${round}: Team FAILED the Pentathlon.`);
+            eliminatedThisRound.push(player);
+            });
+    });
+    
+    passingTeams.forEach(({team}) => {
+        details += `Team [${team.map(p => `P${formatPlayerNumber(p.id)}`).join(', ')}] PASSED.<br>`;
+        team.forEach(player => player.actionLog.push(`GR ${round}: Team PASSED the Pentathlon.`));
+        // Alliance formation logic
+        team.forEach(p1 => {
+            if (!p1.eliminated && !p1.hasFormedPentathlonAlliance && Math.random() < 0.03) {
+                const potentialAllies = team.filter(p2 => p2.id !== p1.id && !p1.allies.includes(p2.id) && !p1.enemies.includes(p2.id) && !p2.eliminated && !p2.hasFormedPentathlonAlliance);
+                if (potentialAllies.length > 0) {
+                    const newAlly = potentialAllies[Math.floor(Math.random() * potentialAllies.length)];
+                    mergeAlliances(p1, newAlly);
+                    p1.hasFormedPentathlonAlliance = true; newAlly.hasFormedPentathlonAlliance = true;
+                    logEvent(`Teamwork pays off! A new alliance formed between P${formatPlayerNumber(p1.id)} and P${formatPlayerNumber(newAlly.id)} after surviving the Pentathlon.`);
+                }
+            }
+        });
+    });
+    eliminatedThisRound.sort(() => Math.random() - 0.5);
+
+    if (animationModeEnabled) {
+            toggleAnimationMode();
+            playersToEliminateInAnimation = eliminatedThisRound.map(p => p.id);
+            animatedEliminationIndex = 0;
+            processNextAnimatedElimination(`failed the Pentathlon.`);
+    } else {
+        handleEliminationProcessing(eliminatedThisRound, `failed the Pentathlon.`, false, 'Pentathlon', false, false, details);
+    }
+}
+
+function handleGlassBridge() {
+    if (!preRoundUpdate()) return;
+    let activePlayers = getActivePlayers();
+    
+    eliminationOrder.push({ isHeader: true, round: round, text: `GR ${round}: Glass Bridge` });
+
+    let panelsToCross = activePlayers.length + 2;
+    
+    let vestNumbers = activePlayers.map((p, i) => i + 1);
+    for (let i = vestNumbers.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [vestNumbers[i], vestNumbers[j]] = [vestNumbers[j], vestNumbers[i]];
+    }
+    activePlayers.forEach((p, i) => {
+        p.vestNumber = vestNumbers[i];
+        p.actionLog.push(`GR ${round}: Received Vest #${p.vestNumber} for Glass Bridge.`);
+    });
+    activePlayers.sort((a,b) => a.vestNumber - b.vestNumber);
+
+    let eliminatedThisRound = [];
+    let details = "Glass Bridge Crossing Order:<br>";
+    let panelsKnown = 0;
+
+    for (const player of activePlayers) {
+        if (panelsKnown >= panelsToCross) { 
+            details += `P${formatPlayerNumber(player.id)} (Vest ${player.vestNumber}) crossed safely.<br>`;
+            continue;
+        }
+
+        details += `P${formatPlayerNumber(player.id)} (Vest ${player.vestNumber}) is next... `;
+        
+        let panelsToGuess = panelsToCross - panelsKnown;
+        let survived = true;
+        for(let i=0; i<panelsToGuess; i++){
+            let eliminationReason = "";
+            
+            const activeEnemiesBehind = player.enemies.filter(enemyId => activePlayers.some(p => p.id === enemyId && p.vestNumber > player.vestNumber && !eliminatedThisRound.includes(p)));
+            let PushedByCaretaker = false;
+            if (!player.caretakerFor) { // Caretakers won't push others
+                const activeCaretakersBehind = activePlayers.filter(p => p.caretakerFor && p.vestNumber > player.vestNumber && p.enemies.includes(player.id));
+                if (activeCaretakersBehind.length > 0 && Math.random() < 0.7) {
+                    const caretaker = activeCaretakersBehind[0];
+                    eliminationReason = `was pushed by an angry caretaker (${createPlayerLink(caretaker.id)}) and fell on panel #${panelsKnown+1}.`;
+                    caretaker.actionLog.push(`GR ${round}: Pushed enemy P${formatPlayerNumber(player.id)} off the Glass Bridge to protect the baby.`);
+                    creditElimination(caretaker.id, player.id);
+                    PushedByCaretaker = true;
+                }
+            }
+            if (!PushedByCaretaker && activeEnemiesBehind.length > 0 && Math.random() < 0.40) {
+                const enemy = players.find(p => p.id === activeEnemiesBehind[0]);
+                eliminationReason = `was pushed by an enemy and fell on panel #${panelsKnown + 1}.`;
+                enemy.actionLog.push(`GR ${round}: Pushed enemy P${formatPlayerNumber(player.id)} off the Glass Bridge.`);
+                creditElimination(enemy.id, player.id);
+            } else {
+                let guessChance = 0.5 + (getEffectiveStat(player, 'luck') - 5) / 200;
+                if (Math.random() > guessChance) {
+                    eliminationReason = `fell on panel #${panelsKnown + 1}.`;
+                }
+            }
+
+            if(eliminationReason){
+                if(checkSurvivalMechanics(player, "Glass Bridge")) {
+                    details += `fell, but was protected!<br>`;
+                    panelsKnown++; 
+                } else {
+                    eliminatedThisRound.push(player);
+                    player.actionLog.push(`GR ${round}: ${eliminationReason}`);
+                    details += `${eliminationReason} ELIMINATED.<br>`;
+                    panelsKnown++; 
+                    survived = false;
+                }
+                break;
+            } else {
+                panelsKnown++;
+            }
+
+        }
+        if(survived){
+            details += `made it across!<br>`;
+        }
+    }
+    
+    const survivors = activePlayers.filter(p => !eliminatedThisRound.some(e => e.id === p.id));
+    survivors.forEach(s => s.actionLog.push(`GR ${round}: Passed Glass Bridge.`));
+    
+    if (animationModeEnabled) {
+            toggleAnimationMode();
+            playersToEliminateInAnimation = eliminatedThisRound.map(p => p.id);
+            animatedEliminationIndex = 0;
+            processNextAnimatedElimination(`fell from the Glass Bridge.`);
+    } else {
+        handleEliminationProcessing(eliminatedThisRound, `fell from the Glass Bridge.`, false, 'Glass Bridge', false, false, details);
+    }
+}
+
+function handleSquidGame() {
+    if (!preRoundUpdate()) return;
+    let activePlayers = getActivePlayers();
+    if (activePlayers.length < 2) {
+        logEvent(`GR ${round} (Squid Game): Not enough players for the final game.`);
+        updateCounters();
+        checkFinalistsAndWinner();
+        return;
+    }
+
+    eliminationOrder.push({ isHeader: true, round: round, text: `GR ${round}: Squid Game` });
+
+    let details = `Final Matches for Squid Game:<br>`;
+    let eliminatedThisRound = [];
+
+    while (activePlayers.length > 1) {
+        for (let i = activePlayers.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [activePlayers[i], activePlayers[j]] = [activePlayers[j], activePlayers[i]];
+        }
+
+        const p1 = activePlayers.shift();
+        const p2 = activePlayers.shift();
+        
+        let winner, loser;
+        let p1Score = (getEffectiveStat(p1, 'strength') * 1.5) + getEffectiveStat(p1, 'agility');
+        let p2Score = (getEffectiveStat(p2, 'strength') * 1.5) + getEffectiveStat(p2, 'agility');
+
+        if(p1.enemies.includes(p2.id)) p1Score *= 1.5;
+        if(p2.enemies.includes(p1.id)) p2Score *= 1.5;
+
+        if (Math.random() < 0.90) { 
+            winner = p1Score >= p2Score ? p1 : p2;
+            loser = p1Score < p2Score ? p1 : p2;
+            details += `P${formatPlayerNumber(winner.id)} defeats P${formatPlayerNumber(loser.id)}.<br>`;
+        } else { 
+            winner = p1Score < p2Score ? p1 : p2;
+            loser = p1Score >= p2Score ? p1 : p2;
+            details += `UPSET! P${formatPlayerNumber(winner.id)} defeats P${formatPlayerNumber(loser.id)}.<br>`;
+        }
+        
+        if (checkSurvivalMechanics(loser, "Squid Game Finale")) {
+            activePlayers.push(loser); // They survive to fight another day
+            details += `... but P${formatPlayerNumber(loser.id)} miraculously survived the encounter!<br>`;
+        } else {
+                creditElimination(winner.id, loser.id);
+                winner.actionLog.push(`GR ${round}: Defeated P${formatPlayerNumber(loser.id)} in Squid Game.`);
+                loser.actionLog.push(`GR ${round}: Was defeated by P${formatPlayerNumber(winner.id)} in Squid Game.`);
+                eliminatedThisRound.push(loser);
+        }
+        activePlayers.push(winner); 
+    }
+    
+    activePlayers.forEach(s => s.actionLog.push(`GR ${round}: Passed the final game.`));
+
+    if (animationModeEnabled) {
+            toggleAnimationMode();
+            playersToEliminateInAnimation = eliminatedThisRound.map(p => p.id);
+            animatedEliminationIndex = 0;
+            processNextAnimatedElimination(`failed the final Squid Game.`);
+    } else {
+        handleEliminationProcessing(eliminatedThisRound, `failed the final Squid Game.`, false, 'Squid Game', false, false, details);
+    }
+}
+
+// --- NEW & REWORKED GAME HANDLERS ---
+function handleLightsOut() {
+    if (!preRoundUpdate()) return;
+    let activePlayers = getActivePlayers();
+    if (activePlayers.length < 2) {
+        logEvent(`GR ${round} (Lights Out): Not enough players.`);
+        return;
+    }
+    
+    eliminationOrder.push({ isHeader: true, round: round, text: `GR ${round}: Lights Out` });
+
+    let eliminatedThisRound = [];
+    let details = "Events in the dark:<br>";
+    let eliminatedIdsThisRound = new Set();
+    
+    const killers = activePlayers.filter(p => getEffectiveStat(p, 'greed') >= 8 && getEffectiveStat(p, 'cowardice') <= 5 && !eliminatedIdsThisRound.has(p.id));
+
+    killers.forEach(killer => {
+        if (eliminatedIdsThisRound.has(killer.id)) return;
+
+        const killChance = (getEffectiveStat(killer, 'greed') / 12) + ((10 - getEffectiveStat(killer, 'cowardice')) / 35);
+        if (Math.random() < killChance) {
+            let potentialVictims = activePlayers.filter(p => p.id !== killer.id && !eliminatedIdsThisRound.has(p.id));
+            if (potentialVictims.length === 0) return;
+
+            let victim = null;
+            const enemyVictims = potentialVictims.filter(p => killer.enemies.includes(p.id));
+            if (enemyVictims.length > 0 && Math.random() < 0.85) {
+                victim = enemyVictims[Math.floor(Math.random() * enemyVictims.length)];
+            } else {
+                potentialVictims.sort((a,b) => (getEffectiveStat(a,'strength')+getEffectiveStat(a,'agility')) - (getEffectiveStat(b,'strength')+getEffectiveStat(b,'agility')));
+                victim = potentialVictims[0];
+            }
+
+            if (!victim) return;
+
+            let killerCombatScore = (getEffectiveStat(killer, 'strength') * 1.5) + getEffectiveStat(killer, 'agility') + (getEffectiveStat(killer, 'luck') / 2);
+            let victimCombatScore = (getEffectiveStat(victim, 'strength') * 1.5) + getEffectiveStat(victim, 'agility') + (getEffectiveStat(victim, 'luck') / 2);
+            
+            let winner, loser;
+            if (killerCombatScore >= victimCombatScore) {
+                winner = killer;
+                loser = victim;
+            } else {
+                winner = victim;
+                loser = killer;
+            }
+            
+            if (!eliminatedIdsThisRound.has(loser.id)) {
+                if (checkSurvivalMechanics(loser, "Lights Out", true)) {
+                    details += `${createPlayerLink(winner.id)} attacked ${createPlayerLink(loser.id)}, but they survived!<br>`;
+                    winner.actionLog.push(`GR ${round}: Attacked ${createPlayerLink(loser.id)} during Lights Out, but they survived.`);
+                } else {
+                    creditElimination(winner.id, loser.id);
+                    details += `${createPlayerLink(winner.id)} eliminated ${createPlayerLink(loser.id)} in the chaos.<br>`;
+                    winner.actionLog.push(`GR ${round}: Eliminated ${createPlayerLink(loser.id)} during Lights Out.`);
+                    loser.actionLog.push(`Event: Was eliminated by ${createPlayerLink(winner.id)} during Lights Out.`);
+                    eliminatedThisRound.push(loser);
+                    eliminatedIdsThisRound.add(loser.id);
+                }
+            }
+        }
+    });
+
+    // Stage 2: Random "unlucky" eliminations
+    let unluckyPlayers = activePlayers.filter(p => !eliminatedIdsThisRound.has(p.id));
+    unluckyPlayers.sort(() => 0.5 - Math.random());
+    
+    for(const player of unluckyPlayers) {
+        const unluckyChance = 0.003 + (getEffectiveStat(player, 'cowardice') / 500);
+        if (Math.random() < unluckyChance) {
+                if (checkSurvivalMechanics(player, "Lights Out", true)) {
+                details += `${createPlayerLink(player.id)} was in a bad spot but was protected.<br>`;
+            } else {
+                details += `${createPlayerLink(player.id)} was eliminated in a freak accident in the dark.<br>`;
+                player.actionLog.push(`GR ${round}: Was eliminated by accident during Lights Out.`);
+                eliminatedThisRound.push(player);
+                eliminatedIdsThisRound.add(player.id);
+            }
+        }
+    }
+    
+    if (animationModeEnabled) {
+            toggleAnimationMode();
+            playersToEliminateInAnimation = eliminatedThisRound.map(p => p.id);
+            animatedEliminationIndex = 0;
+            processNextAnimatedElimination(`was eliminated in the chaos.`);
+    } else {
+        handleEliminationProcessing(eliminatedThisRound, `was eliminated in the chaos.`, false, 'Lights Out', false, false, details, true);
+    }
+}
+
+
+function handleHopscotch() {
+    if (!preRoundUpdate()) return;
+    let activePlayers = getActivePlayers();
+    if (activePlayers.length === 0) {
+        logEvent(`GR ${round} (Hopscotch): No players to participate.`);
+        return;
+    }
+    
+    eliminationOrder.push({ isHeader: true, round: round, text: `GR ${round}: Hopscotch` });
+
+    const eliminatedThisRound = [];
+    let details = "Hopscotch Rolls:<br>";
+
+    activePlayers.forEach(p => {
+        const rolls = [];
+        let total = 0;
+        
+        const rollDie = (player) => {
+            let roll = Math.floor(Math.random() * 6) + 1;
+            const luckFactor = (getEffectiveStat(player, 'luck') - 7.5) / 15;
+            if (Math.random() < Math.abs(luckFactor)) {
+                roll += Math.sign(luckFactor);
+            }
+            return Math.max(1, Math.min(6, Math.round(roll)));
+        };
+
+        for(let i=0; i<3; i++){
+            rolls.push(rollDie(p));
+        }
+        total = rolls.reduce((a, b) => a + b, 0);
+
+        let logMessage = `Rolled [${rolls.join(', ')}] for a total of ${total} in Hopscotch.`;
+            details += `${createPlayerLink(p.id)}: [${rolls.join(', ')}] = <b>${total}</b>... `;
+        
+        if (total < 11) {
+            logMessage += " FAILED.";
+            if (checkSurvivalMechanics(p, "Hopscotch")) {
+                details += "FAILED but was protected.<br>";
+            } else {
+                details += "FAILED.<br>";
+                eliminatedThisRound.push(p);
+                p.actionLog.push(`GR ${round}: ${logMessage}`);
+            }
+        } else {
+            logMessage += " PASSED.";
+            details += "PASSED.<br>";
+            p.actionLog.push(`GR ${round}: ${logMessage}`);
+        }
+    });
+    eliminatedThisRound.sort(() => Math.random() - 0.5);
+    
+    if (animationModeEnabled) {
+            toggleAnimationMode();
+            playersToEliminateInAnimation = eliminatedThisRound.map(p => p.id);
+            animatedEliminationIndex = 0;
+            processNextAnimatedElimination(`failed Hopscotch.`);
+    } else {
+        handleEliminationProcessing(eliminatedThisRound, `failed Hopscotch.`, false, 'Hopscotch', false, false, details);
+    }
+}
+
+function handleHideAndSeek() {
+    if (!preRoundUpdate()) return;
+    let activePlayers = getActivePlayers();
+    if (activePlayers.length < 2) {
+        logEvent(`GR ${round} (Hide and Seek): Not enough players.`);
+        return;
+    }
+    
+    eliminationOrder.push({ isHeader: true, round: round, text: `GR ${round}: Hide & Seek` });
+
+    // --- FIX: Ensure truly random 50/50 split ---
+    let shuffled = [...activePlayers];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    
+    const midPoint = Math.ceil(shuffled.length / 2);
+    const seekers = shuffled.slice(0, midPoint); // First half are seekers
+    let hiders = shuffled.slice(midPoint);      // Second half are hiders
+    // ------------------------------------------
+    
+    seekers.forEach(p => p.actionLog.push(`GR ${round}: Was a Seeker in Hide and Seek.`));
+    hiders.forEach(p => p.actionLog.push(`GR ${round}: Was a Hider in Hide and Seek.`));
+    
+    let details = `<b>Seekers:</b> ${seekers.map(p => `P${formatPlayerNumber(p.id)}`).join(', ')}<br><b>Hiders:</b> ${hiders.map(p => `P${formatPlayerNumber(p.id)}`).join(', ')}<hr>`;
+    
+    let foundHiders = new Set();
+    let eliminatedThisRound = [];
+    let seekerSuccess = {};
+
+    seekers.forEach(seeker => {
+        seekerSuccess[seeker.id] = 0;
+        let maxFinds = 1;
+
+        if (getEffectiveStat(seeker, 'greed') > 10 && Math.random() < 0.15) {
+            maxFinds = 2;
+            if(getEffectiveStat(seeker, 'greed') > 13 && Math.random() < 0.1) maxFinds = 3;
+        }
+
+        for(let i=0; i < maxFinds; i++) {
+            let availableHiders = hiders.filter(h => !foundHiders.has(h.id) && !eliminatedThisRound.some(e => e.id === h.id));
+            if (availableHiders.length === 0) break;
+            
+            let target = availableHiders[Math.floor(Math.random() * availableHiders.length)];
+
+            let findChance = 0.75;
+            findChance += (getEffectiveStat(seeker, 'intelligence') - getEffectiveStat(target, 'intelligence')) / 50;
+            findChance += (getEffectiveStat(seeker, 'strength') - getEffectiveStat(target, 'agility')) / 50;
+            findChance += (getEffectiveStat(seeker, 'luck') - 5) / 100;
+            
+            if (Math.random() < findChance) {
+                foundHiders.add(target.id);
+                details += `P${formatPlayerNumber(seeker.id)} found P${formatPlayerNumber(target.id)}. `;
+                
+                if (Math.random() < 0.05 && getEffectiveStat(target, 'strength') > 10) {
+                    if (!checkSurvivalMechanics(seeker, "Hide and Seek (retaliation)", true)) {
+                        eliminatedThisRound.push(seeker);
+                        target.actionLog.push(`GR ${round}: Found by P${formatPlayerNumber(seeker.id)} but was able to fight him off thus eliminating him.`);
+                        seeker.actionLog.push(`GR ${round}: Was eliminated after finding and fighting P${formatPlayerNumber(target.id)}.`);
+                        details += `But P${formatPlayerNumber(target.id)} fought back and eliminated seeker P${formatPlayerNumber(seeker.id)}!<br>`;
+                        creditElimination(target.id, seeker.id);
+                    }
+                } else { // Normal find
+                    seekerSuccess[seeker.id]++;
+                    seeker.actionLog.push(`GR ${round}: Found P${formatPlayerNumber(target.id)}.`);
+                    target.actionLog.push(`GR ${round}: Was found by P${formatPlayerNumber(seeker.id)}.`);
+
+                    if (!checkSurvivalMechanics(target, "Hide & Seek")) {
+                        eliminatedThisRound.push(target);
+                        details += `P${formatPlayerNumber(target.id)} was eliminated.<br>`;
+                    } else {
+                            details += `P${formatPlayerNumber(target.id)} was protected.<br>`;
+                    }
+                }
+            }
+        }
+    });
+
+    seekers.forEach(seeker => {
+        if (seekerSuccess[seeker.id] === 0 && !eliminatedThisRound.some(e => e.id === seeker.id)) {
+            if (!checkSurvivalMechanics(seeker, "Hide & Seek")) {
+                eliminatedThisRound.push(seeker);
+                details += `Seeker P${formatPlayerNumber(seeker.id)} failed to find anyone and was eliminated.<br>`;
+                seeker.actionLog.push(`GR ${round}: Failed to find anyone as a Seeker and was eliminated.`);
+            }
+        }
+    });
+
+    const minElims = Math.floor(activePlayers.length * 0.5);
+    const maxElims = Math.ceil(activePlayers.length * 0.6);
+    
+    let uniqueEliminated = [...new Set(eliminatedThisRound)];
+    
+    let availableHidersToElim = hiders.filter(h => !uniqueEliminated.some(e => e.id === h.id) && !foundHiders.has(h.id));
+    while(uniqueEliminated.length < minElims && availableHidersToElim.length > 0) {
+        let unluckyHider = availableHidersToElim.pop();
+        if (!checkSurvivalMechanics(unluckyHider, "Hide & Seek")) {
+            uniqueEliminated.push(unluckyHider);
+            details += `P${formatPlayerNumber(unluckyHider.id)} was found under duress and eliminated.<br>`;
+            unluckyHider.actionLog.push(`GR ${round}: Was found and eliminated to meet a quota.`);
+        }
+    }
+    
+    while(uniqueEliminated.length > maxElims) {
+        let luckyPlayer = uniqueEliminated.pop();
+        details += `P${formatPlayerNumber(luckyPlayer.id)} was spared at the last second.<br>`;
+        const logIndex = luckyPlayer.actionLog.length - 1;
+        luckyPlayer.actionLog[logIndex] = luckyPlayer.actionLog[logIndex].replace('and was eliminated', 'but was spared').replace('and eliminated', 'but spared');
+    }
+    eliminatedThisRound = uniqueEliminated;
+    
+    const survivors = activePlayers.filter(p => !eliminatedThisRound.some(e => e.id === p.id));
+    survivors.forEach(s => {
+            if (!s.actionLog.some(log => log.includes(`GR ${round}:`))) {
+                s.actionLog.push(`GR ${round}: Survived Hide and Seek.`);
+            }
+    });
+
+    if (animationModeEnabled) {
+            toggleAnimationMode();
+            playersToEliminateInAnimation = eliminatedThisRound.map(p => p.id);
+            animatedEliminationIndex = 0;
+            processNextAnimatedElimination(`failed Hide and Seek.`);
+    } else {
+        handleEliminationProcessing(eliminatedThisRound, `failed Hide and Seek.`, false, 'Hide & Seek', false, false, details);
+    }
+}
+
+
+function handleSkySquidGame() {
+    if (!preRoundUpdate()) return;
+    let activePlayers = getActivePlayers();
+    if (activePlayers.length < 2) {
+        logEvent(`GR ${round} (Sky Squid Game): Not enough players.`);
+        return;
+    }
+
+    eliminationOrder.push({ isHeader: true, round: round, text: `GR ${round}: Sky Squid Game` });
+
+    let numToEliminate;
+    if (activePlayers.length <= 3) {
+        numToEliminate = activePlayers.length - 1;
+    } else if (activePlayers.length <= 9) {
+        const minElims = 3;
+        const maxElims = activePlayers.length - 1;
+        numToEliminate = Math.floor(Math.random() * (maxElims - minElims + 1)) + minElims;
+    } else {
+        numToEliminate = Math.floor(Math.random() * 7) + 3;
+    }
+
+    if(numToEliminate <= 0) {
+            logEvent(`GR ${round} (Sky Squid Game): No one was eliminated.`);
+            return;
+    }
+
+    activePlayers.forEach(p => {
+        let risk = 0;
+        risk += (15 - getEffectiveStat(p, 'charisma'));
+        risk += (15 - getEffectiveStat(p, 'strength'));
+        risk += (15 - getEffectiveStat(p, 'agility'));
+        risk += (15 - getEffectiveStat(p, 'luck'));
+        risk += getEffectiveStat(p, 'cowardice') * 2;
+        p.eliminationRisk = risk + Math.random();
+    });
+
+    let sortedForElim = [...activePlayers].sort((a,b) => b.eliminationRisk - a.eliminationRisk);
+    
+    const eliminatedThisRound = [];
+    let toEliminate = sortedForElim.slice(0, numToEliminate);
+
+    toEliminate.forEach(p => {
+            if (!checkSurvivalMechanics(p, "Sky Squid Game")) {
+            eliminatedThisRound.push(p);
+        }
+    });
+
+    let details = "Elimination Details:<br>";
+    const survivors = activePlayers.filter(p => !eliminatedThisRound.some(e => e.id === p.id));
+    
+    eliminatedThisRound.forEach(eliminatedPlayer => {
+        let pusher = null;
+        let potentialPushers = survivors.filter(p => p.id !== eliminatedPlayer.id);
+
+        if (potentialPushers.length > 0) {
+                const enemies = potentialPushers.filter(s => s.enemies.includes(eliminatedPlayer.id));
+                if(enemies.length > 0 && Math.random() < 0.75) {
+                    pusher = enemies[Math.floor(Math.random() * enemies.length)];
+                } else {
+                    pusher = potentialPushers[Math.floor(Math.random() * potentialPushers.length)];
+                }
+            }
+
+            if (pusher) {
+                    creditElimination(pusher.id, eliminatedPlayer.id);
+                    details += `P${formatPlayerNumber(pusher.id)} pushed P${formatPlayerNumber(eliminatedPlayer.id)} off the platform.<br>`;
+                    eliminatedPlayer.actionLog.push(`GR ${round}: Failed Sky Squid Game (pushed by P${formatPlayerNumber(pusher.id)}).`);
+                    pusher.actionLog.push(`GR ${round}: Pushed P${formatPlayerNumber(eliminatedPlayer.id)} during Sky Squid Game.`);
+            } else {
+                    details += `P${formatPlayerNumber(eliminatedPlayer.id)} fell off the platform.<br>`;
+                    eliminatedPlayer.actionLog.push(`GR ${round}: Failed Sky Squid Game (fell).`);
+            }
+        });
+        
+        survivors.forEach(s => {
+            if (!s.actionLog.some(log => log.includes(`GR ${round}:`))) {
+                    s.actionLog.push(`GR ${round}: Passed Sky Squid Game.`);
+                }
+        });
+        
+            if (animationModeEnabled) {
+                toggleAnimationMode();
+                playersToEliminateInAnimation = eliminatedThisRound.map(p => p.id);
+                animatedEliminationIndex = 0;
+                processNextAnimatedElimination(`fell in Sky Squid Game.`);
+        } else {
+            handleEliminationProcessing(eliminatedThisRound, `fell in Sky Squid Game.`, false, 'Sky Squid Game', false, false, details);
+        }
+    }
+
+    function handleMingle() {
+        if (!preRoundUpdate()) return;
+        let activePlayers = getActivePlayers();
+        if (activePlayers.length === 0) {
+            logEvent(`GR ${round} (Mingle): No players.`);
+            return;
+        }
+        
+        eliminationOrder.push({ isHeader: true, round: round, text: `GR ${round}: Mingle` });
+        
+        let eliminatedInOrder = [];
+        let details = "Mingle Rounds:<br>";
+        
+        const mingleSubRounds = [
+            { name: 'first', elimChance: 0.15 }, { name: 'second', elimChance: 0.15 },
+            { name: 'third', elimChance: 0.15 }, { name: 'fourth', elimChance: 0.15 }, { name: 'fifth', elimChance: 0.15 }
+        ];
+
+        let playersInGame = [...activePlayers];
+
+        for (const subRound of mingleSubRounds) {
+            if (playersInGame.length < 2) break;
+            
+            let failedThisSubRound = [];
+            let stillInMingle = [];
+            
+            playersInGame.forEach(player => {
+                let failChance = subRound.elimChance;
+                failChance -= (getEffectiveStat(player, 'charisma') + getEffectiveStat(player, 'luck') - getEffectiveStat(player, 'cowardice')) / 150;
+                failChance = Math.max(0.01, failChance);
+                
+                if (Math.random() < failChance) {
+                    if (checkSurvivalMechanics(player, "Mingle")) {
+                        stillInMingle.push(player);
+                    } else {
+                        failedThisSubRound.push(player);
+                    }
+                } else {
+                    stillInMingle.push(player);
+                }
+            });
+
+            if (failedThisSubRound.length > 0) {
+                details += `Eliminated in ${subRound.name} round: ${failedThisSubRound.map(p => `P${formatPlayerNumber(p.id)}`).join(', ')}<br>`;
+                failedThisSubRound.forEach(p => {
+                    p.actionLog.push(`GR ${round}: Failed Mingle in the ${subRound.name} round.`);
+                    eliminatedInOrder.push(p);
+                });
+            }
+            playersInGame = stillInMingle;
+        }
+
+        playersInGame.forEach(p => p.actionLog.push(`GR ${round}: Passed Mingle.`));
+        
+        if (animationModeEnabled) {
+                toggleAnimationMode();
+                playersToEliminateInAnimation = eliminatedInOrder.map(p => p.id);
+                animatedEliminationIndex = 0;
+                processNextAnimatedElimination(`failed to find a partner.`);
+        } else {
+            handleEliminationProcessing(eliminatedInOrder, `failed to find a partner.`, false, 'Mingle', false, false, details);
+        }
+    }
+
+// --- NEW EVENT HANDLERS ---
+function handleRandomEvent() {
+    if (isViewingArchivedGame) return;
+    const availableEventHandlers = [
+        { name: 'bathroomFight', handler: handleBathroomFight },
+        { name: 'xVsO', handler: handleXvsO },
+        { name: 'escapeAttempt', handler: handleEscapeAttempt },
+        { name: 'giveHint', handler: handleGiveHint },
+        { name: 'selfElimination', handler: handleRandomSelfElimination }
+    ].filter(event => !usedEvents.has(event.name));
+
+    if (availableEventHandlers.length === 0) {
+        alert("No more unique events available for this game.");
+        return;
+    }
+
+    const randomEvent = availableEventHandlers[Math.floor(Math.random() * availableEventHandlers.length)];
+    randomEvent.handler();
+}
+
+function handleEvent(eventName, handlerFunction) {
+    if (isViewingArchivedGame) return false;
+    if (isViewingHistory) { alert("Cannot perform actions while viewing history. return;"); return false;}
+    if (usedEvents.has(eventName)) { alert(`The '${eventName}' event has already occurred this game.`); return false; }
+    return handlerFunction(); // Execute the actual handler logic
+}
+
+function handleBathroomFight() {
+    return handleEvent('bathroomFight', () => {
+        if (!season2ModeActive) { alert("This event requires Season 2 Voting to be active."); return false; }
+
+        const activePlayers = getActivePlayers();
+        const xVoters = activePlayers.filter(p => p.currentVote === 'X');
+        const oVoters = activePlayers.filter(p => p.currentVote === 'O');
+
+        if (xVoters.length < 2 || oVoters.length < 2) {
+            alert("Not enough X and O voters for a bathroom fight (need at least 2 of each).");
+            return false;
+        }
+
+        xVoters.sort(() => 0.5 - Math.random());
+        oVoters.sort(() => 0.5 - Math.random());
+        
+        const numToTake = Math.min(xVoters.length, oVoters.length, Math.floor((Math.random() * 6) + 5)); // 5-10 from each side
+        const participantsX = xVoters.slice(0, numToTake);
+        const participantsO = oVoters.slice(0, numToTake);
+        const allParticipants = [...participantsX, ...participantsO];
+        
+        let details = `The fight involved:<br><b>X-Voters:</b> ${participantsX.map(p => createPlayerLink(p.id)).join(', ')}<br><b>O-Voters:</b> ${participantsO.map(p => createPlayerLink(p.id)).join(', ')}<hr>`;
+        allParticipants.forEach(p => p.actionLog.push("Event: Participated in the Bathroom Fight."));
+
+        let eliminatedThisEvent = [];
+        let maxElims = Math.floor(allParticipants.length * 0.6);
+
+        for (let i = 0; i < allParticipants.length / 2; i++) {
+            if (eliminatedThisEvent.length >= maxElims) break;
+
+            const fighters = [...participantsX, ...participantsO].filter(p => !eliminatedThisEvent.includes(p));
+            if (fighters.length < 2) break;
+            
+            const p1 = fighters.find(p => p.currentVote === 'X');
+            const p2 = fighters.find(p => p.currentVote === 'O');
+            if (!p1 || !p2) continue;
+
+            if (p1.allies.includes(p2.id)) continue;
+
+            const p1Score = getEffectiveStat(p1, 'strength') + getEffectiveStat(p1, 'agility') + Math.random() * 5;
+            const p2Score = getEffectiveStat(p2, 'strength') + getEffectiveStat(p2, 'agility') + Math.random() * 5;
+            
+            const [winner, loser] = p1Score > p2Score ? [p1,p2] : [p2,p1];
+            
+            if (!checkSurvivalMechanics(loser, "the Bathroom Fight", true)) {
+                creditElimination(winner.id, loser.id);
+                eliminatedThisEvent.push(loser);
+                details += `${createPlayerLink(winner.id)} eliminated ${createPlayerLink(loser.id)}.<br>`;
+                winner.actionLog.push(`Event: Eliminated ${createPlayerLink(loser.id)} in the Bathroom Fight.`);
+                loser.actionLog.push(`Event: Was eliminated by ${createPlayerLink(winner.id)} in the Bathroom Fight.`);
+            }
+        }
+        
+        const survivors = allParticipants.filter(p => !eliminatedThisEvent.includes(p));
+        survivors.forEach(p => p.actionLog.push("Event: Survived the Bathroom Fight."));
+
+        let injuredCount = 0;
+        let maxInjuries = Math.floor(survivors.length * 0.6);
+        survivors.forEach(survivor => {
+            if (injuredCount < maxInjuries && Math.random() < 0.6 && !survivor.injury) {
+                manualInjury(survivor.id, false, true); // Pass true to not set game as modified
+                survivor.actionLog.push("Event: Was injured in the Bathroom Fight.");
+                injuredCount++;
+            }
+        });
+
+        usedEvents.add('bathroomFight');
+        updateEventButtons();
+        handleEliminationProcessing(eliminatedThisEvent, "was eliminated in the Bathroom Fight", false, "Event: Bathroom Fight", false, false, details, true);
+        return true;
+    });
+}
+
+    function handleXvsO() {
+    return handleEvent('xVsO', () => {
+        if (!season2ModeActive) { alert("This event requires Season 2 Voting to be active."); return false; }
+
+        const activePlayers = getActivePlayers();
+        const xVoters = activePlayers.filter(p => p.currentVote === 'X');
+        const oVoters = activePlayers.filter(p => p.currentVote === 'O');
+
+        if (xVoters.length < 1 || oVoters.length < 1) {
+            alert("Not enough X and O voters for a brawl (need at least 1 of each).");
+            return false;
+        }
+
+        let eliminatedThisEvent = [];
+        let details = "Events in the X vs O brawl:<br>";
+        let eliminatedIdsThisEvent = new Set();
+        const allParticipants = [...xVoters, ...oVoters];
+        allParticipants.forEach(p => p.actionLog.push("Event: Participated in the X vs O brawl."));
+
+        let combatants = [...allParticipants].sort(() => 0.5 - Math.random());
+
+        while(combatants.length >= 2) {
+            const p1 = combatants.pop();
+            const potentialOpponents = combatants.filter(p2 => p2.currentVote !== p1.currentVote && !p1.allies.includes(p2.id));
+            if (potentialOpponents.length === 0) continue;
+            
+            const p2 = potentialOpponents[0];
+            combatants = combatants.filter(p => p.id !== p2.id); 
+
+            let p1Score = (getEffectiveStat(p1, 'strength') * 1.5) + getEffectiveStat(p1, 'agility') + (getEffectiveStat(p1, 'luck') / 2);
+            let p2Score = (getEffectiveStat(p2, 'strength') * 1.5) + getEffectiveStat(p2, 'agility') + (getEffectiveStat(p2, 'luck') / 2);
+            
+            const [winner, loser] = p1Score > p2Score ? [p1,p2] : [p2,p1];
+
+            if (!eliminatedIdsThisEvent.has(loser.id)) {
+                if (checkSurvivalMechanics(loser, "the X vs O brawl", true)) {
+                    details += `${createPlayerLink(winner.id)} defeated ${createPlayerLink(loser.id)}, but they survived!<br>`;
+                } else {
+                    creditElimination(winner.id, loser.id);
+                    eliminatedThisEvent.push(loser);
+                    eliminatedIdsThisEvent.add(loser.id);
+                    details += `${createPlayerLink(winner.id)} eliminated ${createPlayerLink(loser.id)}.<br>`;
+                    winner.actionLog.push(`Event: Eliminated ${createPlayerLink(loser.id)} in the X vs O brawl.`);
+                    loser.actionLog.push(`Event: Lost to ${createPlayerLink(winner.id)} in the X vs O brawl.`);
+                }
+            }
+        }
+        
+        usedEvents.add('xVsO');
+        updateEventButtons();
+        handleEliminationProcessing(eliminatedThisEvent, "was eliminated in the X vs O brawl", false, "Event: X vs O Brawl", false, false, details, true);
+        return true;
+    });
+}
+
+
+function handleEscapeAttempt() {
+    return handleEvent('escapeAttempt', () => {
+        if (!season2ModeActive) { alert("This event requires Season 2 Voting to be active."); return false; }
+        
+        const xVoters = getActivePlayers().filter(p => p.currentVote === 'X');
+        if (xVoters.length === 0) {
+            alert("There are no X-voters to attempt an escape.");
+            return false;
+        }
+
+        const escaper = xVoters[Math.floor(Math.random() * xVoters.length)];
+        let logMessage;
+        
+        if (Math.random() < 0.10) { // 10% success rate
+            escaper.votedOut = true;
+            escaper.roundVotedOut = 'Escaped';
+            logMessage = `A daring escape! ${createPlayerLink(escaper.id)} has successfully escaped the games!`;
+            escaper.actionLog.push("Event: Successfully escaped the game facility.");
+            updateAllPlayerDivs();
+            updateCounters();
+        } else {
+            logMessage = `An escape attempt has failed! ${createPlayerLink(escaper.id)} was caught and eliminated.`;
+            escaper.actionLog.push("Event: Attempted to escape but was caught and eliminated.");
+            handleEliminationProcessing([escaper], "was caught attempting to escape", false, "Event: Escape Attempt", false, false, "The guards made an example of them.", true);
+        }
+
+        logEvent(logMessage);
+        usedEvents.add('escapeAttempt');
+        updateEventButtons();
+        return true;
+    });
+}
+
+function handleGiveHint() {
+    return handleEvent('giveHint', () => {
+        const activePlayers = getActivePlayers().filter(p => !p.hasHint);
+        if (activePlayers.length === 0) {
+            alert("No players available to receive a hint.");
+            return false;
+        }
+        
+        const luckyPlayer = activePlayers[Math.floor(Math.random() * activePlayers.length)];
+        luckyPlayer.hasHint = true;
+        
+        logEvent(`The Front Man has given a hint for the next game to ${createPlayerLink(luckyPlayer.id)}.`);
+        luckyPlayer.actionLog.push("Event: Received a hint for the next game.");
+        
+        usedEvents.add('giveHint');
+        updateEventButtons();
+        updateAllPlayerDivs();
+        return true;
+    });
+}
+
+function handleRandomSelfElimination() {
+    return handleEvent('selfElimination', () => {
+        const activePlayers = getActivePlayers();
+        if (activePlayers.length === 0) {
+            alert("No one left to self-eliminate.");
+            return false;
+        }
+        
+        const unluckyPlayer = activePlayers[Math.floor(Math.random() * activePlayers.length)];
+        
+        unluckyPlayer.actionLog.push("Event: Gave up and self-eliminated.");
+        handleEliminationProcessing([unluckyPlayer], "gave up and self-eliminated", false, "Event: Self-Elimination", false, false, `${createPlayerLink(unluckyPlayer.id)} couldn't take it anymore.`, true);
+
+        usedEvents.add('selfElimination');
+        updateEventButtons();
+        return true;
+    });
+}
+
+
+function updateCounters() {
+    document.getElementById('playersRemaining').innerText = getActivePlayers().length;
+    updateStatistics();
+}
+
+function toggleRosterView() {
+    if (isViewingArchivedGame || isViewingHistory) return;
+    
+    // Toggle the state flag
+    isCompactedView = !isCompactedView;
+    
+    // Update the button text
+    document.getElementById('toggleRosterBtn').innerText = isCompactedView 
+        ? "Restore Full Roster" : "Compact Roster (Delete Out)";
+    
+    // Redraw all elements based on the new view mode
+    updateAllPlayerDivs();
+    logEvent(isCompactedView ? "Roster compacted to only show active players." : "Full roster restored, showing all eliminated players.");
+}
+
+
+// --- UI FUNCTIONS ---
+function openTab(event, tabName) {
+    let tabcontent = document.getElementsByClassName("tab-content");
+    for (let i = 0; i < tabcontent.length; i++) {
+        tabcontent[i].style.display = "none";
+    }
+    let tablinks = document.getElementsByClassName("tab-link");
+    for (let i = 0; i < tablinks.length; i++) {
+        tablinks[i].className = tablinks[i].className.replace(" active", "");
+    }
+    document.getElementById(tabName).style.display = "block";
+    event.currentTarget.className += " active";
+}
+
+function toggleInstructions() {
+    const content = document.getElementById('instructions-content');
+    const toggle = document.getElementById('instructions-toggle');
+    content.style.display = content.style.display === 'none' ? 'block' : 'none';
+    toggle.innerText = content.style.display === 'none' ? 'Instructions & Guide [Click to Open]' : 'Instructions & Guide [Click to Close]';
+}
+
+function toggleAdvancedSettings() {
+    const content = document.getElementById('advanced-settings-content');
+    const toggle = document.getElementById('advanced-settings-toggle');
+    content.style.display = content.style.display === 'none' ? 'block' : 'none';
+    toggle.innerText = content.style.display === 'none' ? 'Advanced New Game Settings [Click to Open]' : 'Advanced New Game Settings [Click to Close]';
+}
+
+function toggleControlPanel() {
+    const panel = document.getElementById('controlPanelContainer');
+    const toggle = document.getElementById('controlPanelToggle');
+    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    toggle.innerHTML = panel.style.display === 'none' ? 'Game Control & Customization ▼' : 'Game Control & Customization ▲';
+}
+
+// --- INJURY MECHANICS ---
+function updateInjuryTimers() {
+    players.forEach(p => {
+        if (p.injury && p.injury.roundsRemaining > 0) {
+            p.injury.roundsRemaining--;
+            if (p.injury.roundsRemaining <= 0) {
+                logEvent(`P${formatPlayerNumber(p.id)} has recovered from their ${p.injury.type.toLowerCase()} injury.`);
+                p.actionLog.push(`GR ${round}: Recovered from injury.`);
+                p.injury = null;
+            }
+        }
+    });
+    updateAllPlayerDivs();
+}
+
+function checkForNewInjuries(gameName = null) {
+    const activePlayers = getActivePlayers().filter(p => !p.injury);
+    let gameMultiplier = 1;
+    
+    const physicalGames = ['Tug of War', 'Jump Rope', 'Hide and Seek', 'Dodgeball', 'Tag', 'Rebellion', 'Squid Game', 'Pentathlon'];
+    if (physicalGames.includes(gameName)) gameMultiplier = 2;
+    else if (gameName === 'Lights Out' || gameName === 'X vs O Brawl' || gameName === 'Bathroom Fight' ) gameMultiplier = 5;
+
+    activePlayers.forEach(p => {
+        const finalChance = (0.0015 + ((10 - getEffectiveStat(p, 'strength')) / 1500)) * gameMultiplier;
+        if (Math.random() < finalChance) {
+            const injuryRand = Math.random();
+            let injuryType, duration, cowardiceDebuff;
+            if (injuryRand < 0.6) { [injuryType, duration, cowardiceDebuff] = ['Minor', 1, 1]; } 
+            else if (injuryRand < 0.9) { [injuryType, duration, cowardiceDebuff] = ['Regular', 2, 1]; } 
+            else { [injuryType, duration, cowardiceDebuff] = ['Major', 3, 2]; }
+            
+            p.injury = { type: injuryType, roundsRemaining: duration, cowardiceDebuff: cowardiceDebuff };
+            logEvent(`P${formatPlayerNumber(p.id)} received a ${injuryType.toLowerCase()} injury!`);
+            p.actionLog.push(`GR ${round}: Suffered a ${injuryType.toLowerCase()} injury (lasts ${duration} round/s).`);
+        }
+    });
+    updateAllPlayerDivs(); 
+}
+
+function manualInjury(playerIdOverride = null, log = true, isEventInjury = false) {
+    if (isViewingArchivedGame) return;
+    if(isViewingHistory) { alert("Cannot perform actions while viewing history. Please Return to Live."); return; }
+
+    // NEW CHECK HERE
+    const tempPlayerId = playerIdOverride || parseInt(document.getElementById('manualInjuryPlayerId').value);
+    const tempPlayer = players.find(p => p.id === tempPlayerId);
+    if (tempPlayer && tempPlayer.isBaby) {
+        alert("The baby cannot be injured.");
+        return false;
+    }
+    // END NEW CHECK
+
+    if (!isEventInjury) {
+            setGameAsModified();
+    }
+    const playerId = playerIdOverride || parseInt(document.getElementById('manualInjuryPlayerId').value);
+    if (isNaN(playerId)) { if(!playerIdOverride) alert("Please enter a valid Player ID."); return; }
+
+    const player = players.find(p => p.id === playerId && !p.eliminated && !p.votedOut);
+    if (!player) { if(!playerIdOverride) alert(`Active player P${formatPlayerNumber(playerId)} not found.`); return; }
+    if (player.injury) { if(!playerIdOverride) alert(`Player P${formatPlayerNumber(playerId)} is already injured.`); return; }
+
+    const injurySeverity = document.querySelector('input[name="injuryType"]:checked').value;
+    const reason = document.getElementById('manualInjuryReason').value.trim();
+    let injuryType, duration, cowardiceDebuff;
+
+    switch (injurySeverity) {
+        case 'major': [injuryType, duration, cowardiceDebuff] = ['Major', 3, 2]; break;
+        case 'regular': [injuryType, duration, cowardiceDebuff] = ['Regular', 2, 1]; break;
+        default: [injuryType, duration, cowardiceDebuff] = ['Minor', 1, 1]; break;
+    }
+
+    player.injury = { type: injuryType, roundsRemaining: duration, cowardiceDebuff: cowardiceDebuff };
+    
+    if (log) {
+        let logMessage = `Player P${formatPlayerNumber(player.id)} was manually given a ${injuryType.toLowerCase()} injury.`;
+        if (reason) logMessage += ` Reason: ${reason}.`;
+        logEvent(logMessage);
+        player.actionLog.push(`Event: Manually inflicted with a ${injuryType.toLowerCase()} injury. ${reason ? '(' + reason + ')' : ''}`);
+    }
+    updateAllPlayerDivs();
+}
+    function removeInjury() {
+    if(isViewingHistory) { alert("Cannot perform actions while viewing history. Please Return to Live."); return; }
+    setGameAsModified();
+    const playerId = parseInt(document.getElementById('manualInjuryPlayerId').value);
+    if (isNaN(playerId)) { alert("Please enter a valid Player ID."); return; }
+    const player = players.find(p => p.id === playerId);
+    if (!player) { alert(`Player P${formatPlayerNumber(playerId)} not found.`); return; }
+    if (!player.injury) { alert(`Player P${formatPlayerNumber(playerId)} is not injured.`); return; }
+
+    player.injury = null;
+    logEvent(`P${formatPlayerNumber(player.id)}'s injury was manually removed.`);
+    player.actionLog.push(`Event: Injury manually removed.`);
+    updateAllPlayerDivs();
+}
+
+
+// ---- GAME CREATOR ----
+function createCustomGame() {
+    if (isViewingArchivedGame) return;
+    if(isViewingHistory) { alert("Cannot perform actions while viewing history. Please Return to Live."); return; }
+    setGameAsModified();
+    const name = document.getElementById('customGameName').value.trim();
+    const reason = document.getElementById('customGameReason').value.trim();
+    const value = parseInt(document.getElementById('customGameValue').value);
+    const elimType = document.querySelector('input[name="elimType"]:checked').value;
+    
+    if (!name || !reason || isNaN(value) || value <= 0) {
+        alert("Please fill out all fields for the custom game with a value greater than 0.");
+        return;
+    }
+
+    const traits = Array.from(document.querySelectorAll('input[name="customTrait"]:checked')).map(cb => cb.value);
+    const newGame = { name, reason, traits, elimType, elimValue: value };
+    customGames.push(newGame);
+    renderCustomGames();
+}
+
+function renderCustomGames() {
+    const list = document.getElementById('customGamesList');
+    list.innerHTML = '';
+    customGames.forEach((game, index) => {
+        const btn = document.createElement('button');
+        btn.innerText = game.name;
+        btn.onclick = () => playCustomGame(index);
+        list.appendChild(btn);
+    });
+}
+
+function playCustomGame(index) {
+    if (isViewingArchivedGame) return;
+    if(isViewingHistory) { alert("Cannot perform actions while viewing history. Please Return to Live."); return; }
+    const game = customGames[index];
+    if (!game) return;
+
+    let activePlayers = getActivePlayers();
+    if(activePlayers.length < 2) {
+            alert("Not enough players for this game.");
+        return;
+    }
+    if (!preRoundUpdate()) return;
+    activePlayers = getActivePlayers();
+    
+    eliminationOrder.push({ isHeader: true, round: round, text: `GR ${round}: ${game.name}` });
+
+
+    let numToEliminate = game.elimType === 'percent' ? Math.floor(activePlayers.length * (game.elimValue / 100)) : game.elimValue;
+    
+    if (numToEliminate >= activePlayers.length) {
+        alert("Too many eliminations for remaining players! At least one must survive.");
+            round--;
+        return;
+    }
+
+    activePlayers.forEach(p => {
+        let score = 0;
+        if (game.traits.length > 0) {
+            score = game.traits.reduce((total, trait) => total + getEffectiveStat(p, trait), 0) / game.traits.length;
+        }
+        p.survivalScore = score + Math.random() * 5;
+    });
+
+    activePlayers.sort((a,b) => a.survivalScore - b.survivalScore); 
+
+    const eliminatedThisRound = [];
+    let toEliminate = activePlayers.slice(0, numToEliminate);
+
+    toEliminate.forEach(player => {
+        if (!checkSurvivalMechanics(player, game.name)) {
+            eliminatedThisRound.push(player);
+        }
+    });
+    
+    const survivors = activePlayers.filter(p => !eliminatedThisRound.some(e => e.id === p.id));
+    survivors.forEach(s => s.actionLog.push(`GR ${round}: Passed ${game.name}.`));
+    eliminatedThisRound.forEach(e => e.actionLog.push(`GR ${round}: Failed ${game.name}.`));
+    
+        if (animationModeEnabled) {
+            toggleAnimationMode();
+            playersToEliminateInAnimation = eliminatedThisRound.map(p => p.id);
+            animatedEliminationIndex = 0;
+            processNextAnimatedElimination(game.reason);
+    } else {
+        handleEliminationProcessing(eliminatedThisRound, game.reason, false, game.name, false, false, null);
+    }
+}
+
+// --- VIP BETTING FUNCTIONS ---
+function updateVipTab() {
+    const balanceEl = document.getElementById('bettingBalanceDisplay');
+    const mainContentEl = document.getElementById('betting-main-content');
+    const disabledMsgEl = document.getElementById('betting-disabled-msg');
+
+    balanceEl.textContent = formatCurrency(bettingBalance);
+
+    if (isGameModified || isViewingArchivedGame) {
+        mainContentEl.style.display = 'none';
+        disabledMsgEl.style.display = 'block';
+        disabledMsgEl.textContent = isViewingArchivedGame
+            ? "Betting is disabled while viewing an archived game."
+            : "Betting is disabled for this game because a player was modified. Start a new game for a 'vanilla' experience to enable betting.";
+        return;
+    }
+
+    disabledMsgEl.style.display = 'none';
+    mainContentEl.style.display = 'block';
+    
+    let betListHTML = '';
+    if (currentBets.length > 0) {
+        betListHTML += '<h4>Active Bets</h4><ul id="bet-status-list">';
+        currentBets.forEach(bet => {
+            betListHTML += `
+                <li>
+                    ${createPlayerLink(bet.playerId)} - Wager: ${formatCurrency(bet.amount)} (Win: ${formatCurrency(bet.potentialPayout)})
+                    <button onclick="cancelBet(${bet.playerId})">Cancel</button>
+                </li>
+            `;
+        });
+        betListHTML += '</ul><hr>';
+    }
+
+    mainContentEl.innerHTML = `
+        ${betListHTML}
+        <div id="betting-controls">
+            <h4>Place a New Bet</h4>
+            <label for="betPlayerId">Player ID to Bet On:</label>
+            <input type="number" id="betPlayerId" min="1" onkeyup="showPotentialPayout()">
+            <label for="betAmount">Bet Amount:</label>
+            <input type="number" id="betAmount" min="1" onkeyup="showPotentialPayout()">
+            <div id="potential-payout-info">Enter Player ID to see odds.</div>
+            <button id="placeBetBtn" onclick="placeBet()">Place Bet</button>
+        </div>
+    `;
+}
+
+function calculatePayoutMultiplier(player) {
+    if (!player) return 0;
+    const fearScore = getPlayerFearScore(player);
+    let baseMultiplier = 50 / (fearScore + 5); 
+    const decayFactor = Math.pow(1.25, round); // Decay to 80% of value each round
+    return Math.max(1.1, baseMultiplier / decayFactor); // Ensure at least a small payout
+}
+
+function showPotentialPayout() {
+    if(isViewingArchivedGame) return;
+    const playerId = parseInt(document.getElementById('betPlayerId').value);
+    const amount = parseInt(document.getElementById('betAmount').value) || 100000;
+    const payoutInfoEl = document.getElementById('potential-payout-info');
+    const player = players.find(p => p.id === playerId && !p.eliminated && !p.votedOut);
+
+    if (player) {
+        const multiplier = calculatePayoutMultiplier(player);
+        payoutInfoEl.innerHTML = `Odds for ${createPlayerLink(playerId)}: ~${multiplier.toFixed(2)}x.
+        <br>A ${formatCurrency(amount)} bet could win ~${formatCurrency( Math.floor(amount * multiplier) )}.`;
+    } else {
+        payoutInfoEl.textContent = 'Enter a valid, active Player ID.';
+    }
+}
+
+function placeBet() {
+    if (isViewingArchivedGame) return;
+    if(isViewingHistory) { alert("Cannot perform actions while viewing history. Please Return to Live."); return; }
+    if (isGameModified) return;
+
+    const playerId = parseInt(document.getElementById('betPlayerId').value);
+    const amount = parseInt(document.getElementById('betAmount').value);
+
+    if (isNaN(playerId) || isNaN(amount)) { alert("Please enter a valid Player ID and bet amount."); return; }
+    if (amount <= 0) { alert("Bet amount must be positive."); return; }
+    if (amount > bettingBalance) { alert("Insufficient funds."); return; }
+
+    const player = players.find(p => p.id === playerId && !p.eliminated && !p.votedOut);
+    if (!player) { alert("Player not found or is already out of the game."); return; }
+    if (currentBets.some(b => b.playerId === playerId)) { alert("You already have a bet placed on this player."); return; }
+
+
+    const multiplier = calculatePayoutMultiplier(player);
+    const potentialPayout = Math.floor(amount * multiplier);
+
+    bettingBalance -= amount;
+    player.hasVipBet = true;
+    currentBets.push({ playerId, amount, initialRound: round, potentialPayout });
+    
+    logEvent(`<b>VIP BET PLACED:</b> Wagered ${formatCurrency(amount)} on P${formatPlayerNumber(playerId)} to win.`, `Potential Payout: ${formatCurrency(potentialPayout)}`);
+    unlockAchievement('firstBet');
+    updateVipTab();
+}
+
+function cancelBet(playerIdToCancel) {
+    if (isViewingArchivedGame) return;
+    if(isViewingHistory) { alert("Cannot perform actions while viewing history. Please Return to Live."); return; }
+    const betToCancel = currentBets.find(b => b.playerId === playerIdToCancel);
+    if (!betToCancel) return;
+
+    const player = players.find(p => p.id === betToCancel.playerId);
+    if(player) player.hasVipBet = false;
+    
+    bettingBalance += betToCancel.amount;
+    logEvent(`<b>VIP BET CANCELLED:</b> Bet on P${formatPlayerNumber(betToCancel.playerId)} removed. ${formatCurrency(betToCancel.amount)} refunded.`);
+
+    currentBets = currentBets.filter(b => b.playerId !== playerIdToCancel);
+    updateVipTab();
+}
+
+// --- ACHIEVEMENTS ---
+    function checkAllAchievements() {
+    if(achievements.masterOfFate && achievements.masterOfFate.unlocked) return;
+    let allUnlocked = true;
+    for (const id in achievements) {
+        if (id === 'masterOfFate') continue;
+        if (!achievements[id] || !achievements[id].unlocked) {
+            allUnlocked = false;
+            break;
+        }
+    }
+    if (allUnlocked) {
+        unlockAchievement('masterOfFate');
+    }
+}
+
+function initializeAchievements() {
+    achievements = {
+        newGame: { name: "Let the Games Begin", desc: "Start your first game.", unlocked: false },
+        fullHouse: { name: "A Full Roster", desc: "Start a game with 456 players.", unlocked: false },
+        firstWinBet: { name: "High Roller", desc: "Win your first bet on a game winner.", unlocked: false },
+        topTenBet: { name: "Good Eye", desc: "Win a consolation prize by betting on a player who reached the Top 10.", unlocked: false },
+        firstBet: { name: "Feeling Lucky?", desc: "Place your first bet on a player.", unlocked: false },
+        specialCharacter: { name: "Is That...?", desc: "Encounter a special character.", unlocked: false },
+        revolution: { name: "Viva La Revolución", desc: "Witness a successful player rebellion.", unlocked: false },
+        tragedy: { name: "Unbearable Loss", desc: "Witness a player self-eliminate out of grief.", unlocked: false },
+        handOfGod: { name: "Hand of God", desc: "Manually eliminate a player.", unlocked: false },
+        necromancer: { name: "Back From The Dead", desc: "Revive a player.", unlocked: false },
+        sharedVictory: { name: "Better Together", desc: "Witness a game end with joint winners.", unlocked: false },
+        serialWinner: { name: "Serial Winner", desc: "Have your chosen players win 5 games.", progress: 0, goal: 5, unlocked: false },
+        betEarlyWinner: { name: "Early Bird Gets the Worm", desc: "Have a player you bet on within the first 3 rounds win (no modifications).", unlocked: false },
+        underdogWinner: { name: "Underdog Victory", desc: "Have a player under ID 010 win (no modifications).", unlocked: false },
+        canonWinner: { name: "Canon Winner", desc: "Have an easter egg character win (no modifications).", unlocked: false },
+        previousWinnerJoins: { name: "I've Played These Games Before!", desc: "A previous winner has joined the new game.", unlocked: false }, 
+        previousWinnerWins: { name: "Do You Still Have Faith In People?", desc: "A previous winner has won the game again.", unlocked: false },
+        dramatisPersonae: { name: "Dramatis Personae", desc: "Play a game with 10+ characters with personalities.", unlocked: false },
+        goldenYears: { name: "Golden Years", desc: "Have an 80+ year old win a game (no modifications).", unlocked: false },
+        debtFree: { name: "Debt Free", desc: "Have someone with $2,500,000+ debt win a game (no modifications).", unlocked: false },
+        megaGame: { name: "Mega-Game", desc: "Play through a game with 1000+ players.", unlocked: false },
+        gameVeteran: { name: "Game Veteran", desc: "Play and complete 37 games.", progress: 0, goal: 37, unlocked: false },
+        masterOfFate: { name: "Master of Fate", desc: "Unlock all other achievements.", unlocked: false },
+    };
+    renderAchievements();
+}
+
+function unlockAchievement(id) {
+    if (achievements[id] && !achievements[id].unlocked) {
+        achievements[id].unlocked = true;
+        showAchievementToast(id);
+        renderAchievements();
+        checkAllAchievements();
+    }
+}
+
+function updateProgressAchievement(id, amount) {
+    if (achievements[id] && !achievements[id].unlocked) {
+        achievements[id].progress += amount;
+        if (achievements[id].progress >= achievements[id].goal) {
+            achievements[id].progress = achievements[id].goal;
+            unlockAchievement(id);
+        }
+        renderAchievements();
+    }
+}
+
+function renderAchievements() {
+    const listEl = document.getElementById('achievements-list');
+    listEl.innerHTML = '';
+    for (const id in achievements) {
+        const ach = achievements[id];
+        const item = document.createElement('div');
+        item.className = `achievement-item ${ach.unlocked ? 'unlocked' : ''}`;
+        
+        let html = `<h5>${ach.name} ${ach.unlocked ? '✓' : ''}</h5><p>${ach.desc}</p>`;
+        if(ach.goal) {
+            html += `<progress value="${ach.progress}" max="${ach.goal}"></progress> (${ach.progress}/${ach.goal})`;
+        }
+        item.innerHTML = html;
+        listEl.appendChild(item);
+    }
+}
+
+function showAchievementToast(id) {
+    const ach = achievements[id];
+    const toast = document.getElementById('achievement-toast');
+    toast.innerHTML = `
+        <h4>🏆 Achievement Unlocked!</h4>
+        <h5>${ach.name}</h5>
+        <p>${ach.desc}</p>
+    `;
+    toast.classList.add('show');
+    setTimeout(() => {
+        toast.classList.remove('show');
+    }, 5000);
+}
+
+// --- NEW FEATURE FUNCTIONS (Relations, History Slider, Archive, etc.) ---
+function establishRelations() {
+    const relationChance = 1 / 250;
+    const relatedPlayerIds = new Set();
+    
+    const findPartner = (p1, relationType, potentialPartners) => {
+        let validPartners = [];
+        switch (relationType) {
+            case 'Wife':
+                validPartners = potentialPartners.filter(p2 => p2.gender === 'Female' && p1.gender === 'Male' && Math.abs(p1.age - p2.age) <= 10);
+                break;
+            case 'Husband':
+                validPartners = potentialPartners.filter(p2 => p2.gender === 'Male' && p1.gender === 'Female' && Math.abs(p1.age - p2.age) <= 10);
+                break;
+            case 'Mother': // Find a mother for p1
+                validPartners = potentialPartners.filter(p2 => p2.gender === 'Female' && p2.age >= p1.age + 18);
+                break;
+            case 'Father': // Find a father for p1
+                validPartners = potentialPartners.filter(p2 => p2.gender === 'Male' && p2.age >= p1.age + 18);
+                break;
+            case 'Son': // Find a son for p1
+                validPartners = potentialPartners.filter(p2 => p2.gender === 'Male' && p1.age >= p2.age + 18);
+                break;
+            case 'Daughter': // Find a daughter for p1
+                validPartners = potentialPartners.filter(p2 => p2.gender === 'Female' && p1.age >= p2.age + 18);
+                break;
+            case 'Friend':
+                validPartners = potentialPartners;
+                break;
+        }
+        return validPartners.length > 0 ? validPartners[Math.floor(Math.random() * validPartners.length)] : null;
+    };
+
+    const playersShuffled = [...players].sort(() => 0.5 - Math.random());
+    for (const p1 of playersShuffled) {
+        if (relatedPlayerIds.has(p1.id) || Math.random() > relationChance) continue;
+
+        let potentialPartnersPool = [];
+        if (Math.random() < 0.5) { // 50% chance for a proximal partner
+            const neighborIds = [p1.id - 1, p1.id + 1];
+            for (const id of neighborIds) {
+                const neighbor = players.find(p => p.id === id);
+                if (neighbor && !relatedPlayerIds.has(id)) {
+                    potentialPartnersPool.push(neighbor);
+                }
+            }
+        }
+            if (potentialPartnersPool.length === 0) { // Fallback to random
+            potentialPartnersPool = players.filter(p => p.id !== p1.id && !relatedPlayerIds.has(p.id));
+        }
+
+        const relationTypes = ['Husband', 'Wife', 'Mother', 'Father', 'Son', 'Daughter', 'Friend'];
+        relationTypes.sort(() => 0.5 - Math.random());
+
+        let partner = null;
+        let chosenType = null;
+        for (const type of relationTypes) {
+            partner = findPartner(p1, type, potentialPartnersPool);
+            if (partner) {
+                chosenType = type;
+                break;
+            }
+        }
+
+        if (partner && chosenType) {
+            const p2 = partner;
+            let partnerRelationType;
+            if (chosenType === 'Wife') partnerRelationType = 'Husband';
+            else if (chosenType === 'Husband') partnerRelationType = 'Wife';
+            else if (chosenType === 'Mother') partnerRelationType = p1.gender === 'Male' ? 'Son' : 'Daughter';
+            else if (chosenType === 'Father') partnerRelationType = p1.gender === 'Male' ? 'Son' : 'Daughter';
+            else if (chosenType === 'Son') partnerRelationType = p1.gender === 'Male' ? 'Father' : 'Mother';
+            else if (chosenType === 'Daughter') partnerRelationType = p1.gender === 'Female' ? 'Mother' : 'Father';
+            else partnerRelationType = 'Friend';
+            
+            p1.relation = { type: chosenType, targetId: p2.id };
+            p2.relation = { type: partnerRelationType, targetId: p1.id };
+            
+            if (chosenType !== 'Friend') {
+                p2.lastName = p1.lastName;
+                p2.name = `${p2.firstName} ${p2.lastName}`;
+            }
+
+            relatedPlayerIds.add(p1.id);
+            relatedPlayerIds.add(p2.id);
+            mergeAlliances(p1, p2);
+            logEvent(`A special bond has been discovered! ${createPlayerLink(p1.id)} and ${createPlayerLink(p2.id)} are ${chosenType}/${partnerRelationType}.`);
+        }
+    }
+}
+
+
+function updateEliminationOrderList() {
+    const listEl = document.getElementById('eliminationOrderList');
+    listEl.innerHTML = '';
+    let count = 1;
+
+    const displayedIds = new Set();
+    let finalOrderList = [];
+    
+    for (const item of eliminationOrder) {
+        if (item.isHeader) {
+            finalOrderList.push(item);
+        } else if (!displayedIds.has(item.playerId)) {
+            finalOrderList.push({ ...item, isTrueElim: true });
+            displayedIds.add(item.playerId);
+        }
+    }
+
+    finalOrderList.forEach(item => {
+        const div = document.createElement('div');
+        if (item.isHeader) {
+            div.className = 'elim-order-header';
+            div.innerHTML = `— ${item.text} —`;
+        } else if (item.isTrueElim) {
+            div.className = 'elim-order-item';
+            div.innerHTML = `${count}. ${createPlayerLink(item.playerId)}`;
+            count++;
+        }
+        listEl.appendChild(div);
+    });
+}
+
+function takeSnapshot(roundNum, roundName) {
+    if(isViewingArchivedGame) return;
+    const snapshot = {
+        round: roundNum,
+        name: roundName,
+        players: JSON.parse(JSON.stringify(players))
+    };
+    gameHistorySnapshots.push(snapshot);
+}
+
+function handleHistorySlide(value) {
+    if (!isViewingHistory) {
+        isViewingHistory = true;
+        if (!isViewingArchivedGame && !livePlayersState) {
+            livePlayersState = JSON.parse(JSON.stringify(players));
+        }
+    }
+    
+    const snapshot = gameHistorySnapshots[value];
+    if (!snapshot) return;
+
+    // Use the players list from the snapshot to correctly derive remaining player counts
+    const snapshotPlayers = snapshot.players;
+    
+    // --- NEW CALCULATION ---
+    const playersRemainingInSnapshot = snapshotPlayers.filter(p => !p.eliminated && !p.votedOut).length;
+    // -------------------------
+
+    // Apply the snapshot state to the main players array for visualization purposes
+    players = JSON.parse(JSON.stringify(snapshotPlayers));
+
+    // Update the label with the remaining player count
+    document.getElementById('historySliderLabel').innerText = `Round ${snapshot.round}: ${snapshot.name} (${playersRemainingInSnapshot} remaining)`;
+    
+    updateAllPlayerDivs();
+    updateAllCustomLists();
+}
+
+
+function returnToLive() {
+    if (!isViewingHistory) return;
+    
+    isViewingHistory = false;
+    if (!isViewingArchivedGame) {
+        players = JSON.parse(JSON.stringify(livePlayersState));
+        livePlayersState = null;
+    } else {
+        const lastSnapshot = gameHistorySnapshots[gameHistorySnapshots.length - 1];
+        if(lastSnapshot) players = JSON.parse(JSON.stringify(lastSnapshot.players));
+    }
+    
+    const slider = document.getElementById('historySlider');
+    slider.value = slider.max;
+    
+    // --- NEW LINE: Update live label with current remaining players
+    document.getElementById('historySliderLabel').innerText = `Live (${getActivePlayers().length} remaining)`; 
+
+    updateAllPlayerDivs();
+    updateAllCustomLists();
+}
+
+
+function updateHistorySliderUI() {
+    const slider = document.getElementById('historySlider');
+    slider.max = gameHistorySnapshots.length - 1;
+    slider.value = slider.max;
+    document.getElementById('historySliderLabel').innerText = 'Live';
+}
+
+// ---- NEW ARCHIVE FUNCTIONS ----
+function saveCompletedGameRecord(record) {
+    if (isViewingArchivedGame) return;
+    
+    takeSnapshot(round + 1, "Game End");
+    
+    const fullState = {
+        players: JSON.parse(JSON.stringify(players)),
+        round: round,
+        eliminationOrder: JSON.parse(JSON.stringify(eliminationOrder)),
+        gameHistorySnapshots: JSON.parse(JSON.stringify(gameHistorySnapshots)),
+        currentPrizePot: currentPrizePot
+    };
+    
+    const gameRecord = {
+        ...record,
+        gameNumber: currentGameNumber,
+        startingPlayers: players.length,
+        fullState: fullState,
+    };
+    
+    allGamesHistory.push(gameRecord);
+    if (gameRecord.startingPlayers >= 1000) unlockAchievement('megaGame');
+    updateProgressAchievement('gameVeteran', 1);
+}
+
+function viewArchivedGame(gameNumber) {
+    const gameData = allGamesHistory.find(g => g.gameNumber === gameNumber);
+    if (!gameData) {
+        alert("Could not find data for the archived game.");
+        return;
+    }
+
+    if (!isViewingArchivedGame) {
+        liveGameStateBackup = JSON.parse(JSON.stringify(createSaveObject()));
+    }
+    
+    isViewingArchivedGame = true;
+    document.getElementById('archive-view-banner').style.display = 'block';
+
+    const archivedState = gameData.fullState;
+    players = JSON.parse(JSON.stringify(archivedState.players));
+    round = archivedState.round;
+    eliminationOrder = JSON.parse(JSON.stringify(archivedState.eliminationOrder));
+    gameHistorySnapshots = JSON.parse(JSON.stringify(archivedState.gameHistorySnapshots));
+    currentPrizePot = archivedState.currentPrizePot;
+    season2ModeActive = players.some(p => p.voteHistory && p.voteHistory.length > 0);
+    
+    document.querySelectorAll('button, input:not([type="range"]), select').forEach(el => {
+        const isArchiveControl = el.closest('#archive-view-banner') || el.closest('#history-slider-container') || el.closest('#grid-controls');
+        if (!isArchiveControl && !el.closest('#instructions-panel')) {
+            el.disabled = true;
+        }
+    });
+    
+    isViewingHistory = true; // Set to true to allow slider use
+    livePlayersState = null; // Clear this as we're in archive mode
+
+    calculateGridPositions(players.length);
+    updateAllPlayerDivs();
+    updateCounters();
+    updateEliminationOrderList();
+    updateHistorySliderUI();
+    document.getElementById('history-slider-container').style.display = 'block';
+    returnToLive();
+}
+
+function returnToLiveGame() {
+    if (!isViewingArchivedGame || !liveGameStateBackup) return;
+
+    restoreGameState(liveGameStateBackup, false); 
+    liveGameStateBackup = null;
+    isViewingArchivedGame = false;
+    isViewingHistory = false;
+    
+    document.getElementById('archive-view-banner').style.display = 'none';
+    
+    document.querySelectorAll('button, input, select').forEach(el => {
+            el.disabled = false;
+    });
+
+    updateAllUI();
+}
+
+function restoreGameState(data, showAlert = true) {
+    players = data.players || [];
+    round = data.round || 0;
+customPlayerPhotos = data.customPlayerPhotos || {};
+    personalityPlayers = new Set(data.personalityPlayers || []);
+    superpoweredPlayerIds = new Set(data.superpoweredPlayerIds || []);
+    eliminatedHidden = data.eliminatedHidden || false;
+    season2ModeActive = data.season2ModeActive || false;
+    showVoteColors = data.showVoteColors || false;
+    votingRoundCount = data.votingRoundCount || 0;
+    showGroups = data.showGroups || false;
+    allianceGroupColors = data.allianceGroupColors || {};
+    firstEliminationOfGame = data.firstEliminationOfGame === undefined ? true : data.firstEliminationOfGame;
+    favoritedPlayerIds = new Set(data.favoritedPlayerIds || []);
+    eliminationOrder = data.eliminationOrder || [];
+    gameHistorySnapshots = data.gameHistorySnapshots || [];
+    usedEvents = new Set(data.usedEvents || []);
+    customGames = data.customGames || [];
+    currentPrizePot = data.currentPrizePot || 0;
+    isGameModified = data.isGameModified || false;
+    currentBets = data.currentBets || [];
+    isPlayer001VIP = data.isPlayer001VIP || false;
+    player001VIP_Id = data.player001VIP_Id || null;
+    currentGameNumber = data.currentGameNumber || 0;
+    
+    if (data.bettingBalance !== undefined) bettingBalance = data.bettingBalance;
+    if (data.achievements) achievements = data.achievements;
+    if (data.allGamesHistory) allGamesHistory = data.allGamesHistory;
+    
+    players.forEach(p => p.isFavorite = favoritedPlayerIds.has(p.id));
+
+    document.getElementById('gameLogList').innerHTML = showAlert ? '<li>Game state loaded.</li>' : '';
+
+    // Reset archive/history view state
+    isViewingHistory = false;
+    livePlayersState = null;
+    updateAllUI();
+}
+
+function updateAllUI() {
+    if(players.length > 0) calculateGridPositions(players.length);
+    updateAllPlayerDivs();
+    updateCounters();
+    updateAllCustomLists();
+    updateSuperpowerList();
+    displayWinnerHistory();
+    updateEliminationOrderList();
+    renderCustomGames();
+    updateVipTab();
+    if (Object.keys(achievements).length > 0) renderAchievements(); else initializeAchievements();
+    updateEventButtons();
+    updateHistorySliderUI();
+    resetZoom();
+
+    document.getElementById('history-slider-container').style.display = players.length > 0 ? 'block' : 'none';
+    
+    const pausePlayBtn = document.getElementById('pausePlayButton');
+    pausePlayBtn.innerText = 'Pause Animation'; pausePlayBtn.disabled = true;
+}
+
+
+// --- ZOOM AND PAN LOGIC ---
+let scale = 1;
+function zoom(factor) {
+    const playersDiv = document.getElementById('players');
+    scale *= factor;
+    playersDiv.style.transform = `scale(${scale})`;
+}
+
+function resetZoom() {
+    const playersDiv = document.getElementById('players');
+    const viewport = document.getElementById('grid-viewport');
+    scale = 1;
+    playersDiv.style.transform = `scale(${scale})`;
+    viewport.scrollLeft = (playersDiv.offsetWidth - viewport.clientWidth) / 2;
+    viewport.scrollTop = 0;
+}
+
+// --- MANUAL EASTER EGG ---
+function populateEasterEggBox() {
+    const listEl = document.getElementById('easterEggCharacterList');
+    listEl.innerHTML = '';
+    for (const id in manualEasterEggData) {
+        const data = manualEasterEggData[id];
+        const name = data.name || (data.resolve ? 'Oh Il-Nam / Young-Il' : `Player ${id}`);
+        const btn = document.createElement('button');
+        btn.textContent = `P${formatPlayerNumber(id)}: ${name}`;
+        btn.onclick = () => applyManualEasterEgg(id);
+        listEl.appendChild(btn);
+    }
+}
+
+function applyManualEasterEgg(id) {
+    if(isViewingArchivedGame) return;
+    setGameAsModified();
+    let eggData = manualEasterEggData[id];
+    if (typeof eggData.resolve === 'function') {
+        eggData = eggData.resolve();
+    }
+
+    const player = players.find(p => p.id == id);
+    if (!player) { alert(`Player P${formatPlayerNumber(id)} not found in current game.`); return; }
+    if (player.eliminated || player.votedOut) { alert(`Player P${formatPlayerNumber(id)} is not active.`); return; }
+    
+    player.name = eggData.name;
+    player.baseStats = { ...eggData.stats };
+    if (eggData.personality) {
+        Object.assign(player, eggData.personality);
+    }
+
+    // Apply photo URL if it exists in the data structure
+    if (eggData.photoUrl) {
+        customPlayerPhotos[player.id] = eggData.photoUrl;
+    }
+
+    player.protection = 1;
+    player.isEasterEgg = true;
+    
+    personalityPlayers.add(player.id);
+    
+    logEvent(`Manually applied Easter Egg: P${formatPlayerNumber(id)} is now ${player.name}.`);
+    updateAllPlayerDivs();
+    updateAllCustomLists();
+}
+
+
+// --- ADD PREVIOUS WINNER ----
+function populatePreviousWinnersDropdown() {
+    const select = document.getElementById('previousWinnerSelect');
+    select.innerHTML = '<option value="">-- Select a Winner --</option>';
+    const winners = allGamesHistory.filter(g => g.winnerId !== null);
+    
+    winners.forEach(game => {
+        const option = document.createElement('option');
+        option.value = `${game.gameNumber}-${game.winnerId}`;
+        option.textContent = `G${game.gameNumber} Winner: ${game.winnerName} (P${game.winnerId})`;
+        option.dataset.defaultId = game.winnerId;
+        select.appendChild(option);
+    });
+}
+
+function updateWinnerDefaultId() {
+    const select = document.getElementById('previousWinnerSelect');
+    const selectedOption = select.options[select.selectedIndex];
+    document.getElementById('newWinnerPlayerId').value = selectedOption.dataset.defaultId || '';
+}
+
+function addPreviousWinnerToGame() {
+    if (isViewingArchivedGame) return;
+    
+    const select = document.getElementById('previousWinnerSelect');
+    const [gameNum, winnerId] = select.value.split('-').map(Number);
+    const newPlayerId = parseInt(document.getElementById('newWinnerPlayerId').value);
+    
+    if (isNaN(gameNum) || isNaN(winnerId) || isNaN(newPlayerId) || newPlayerId <= 0) {
+        alert("Please select a winner and enter a valid new Player ID.");
+        return;
+    }
+
+    const playerToReplace = players.find(p => p.id === newPlayerId);
+    if (!playerToReplace) { alert(`Player with ID ${newPlayerId} not found in the current game.`); return; }
+    if (playerToReplace.eliminated || playerToReplace.votedOut) { alert(`Player ${newPlayerId} is not active and cannot be replaced.`); return; }
+    
+    const gameRecord = allGamesHistory.find(g => g.gameNumber === gameNum);
+    const winnerData = gameRecord.fullState.players.find(p => p.id === winnerId);
+    
+    if (winnerData) {
+        setGameAsModified();
+        const replacedIndex = players.findIndex(p => p.id === newPlayerId);
+        
+        players[replacedIndex] = JSON.parse(JSON.stringify(winnerData));
+        const returningWinner = players[replacedIndex];
+        
+        returningWinner.id = newPlayerId;
+        returningWinner.eliminated = false;
+        returningWinner.votedOut = false;
+        returningWinner.isWinner = false;
+        returningWinner.isFinalist = false;
+        returningWinner.protection = 3;
+        returningWinner.isPreviousWinner = true;
+        
+        Object.keys(returningWinner.baseStats).forEach(stat => {
+            if(stat !== 'cowardice') returningWinner.baseStats[stat] = Math.min(15, (returningWinner.baseStats[stat] || 0) + 1);
+        });
+        returningWinner.baseStats.cowardice = Math.max(0, Math.floor(returningWinner.baseStats.cowardice / 2));
+        
+        logEvent(`A PREVIOUS WINNER RETURNS! P${formatPlayerNumber(newPlayerId)} is actually ${winnerData.name}, the winner of Game #${gameNum}!`);
+        unlockAchievement('previousWinnerJoins');
+
+        updateAllPlayerDivs();
+        updateAllCustomLists();
+    } else {
+        alert("Could not retrieve winner data.");
+    }
+}
+
+let currentPlayerCardId = null; // To track which player's card is open
+
+function applyUrlFromCard() {
+    if (!currentPlayerCardId) return;
+    if (isViewingArchivedGame) return;
+    
+    const urlInput = document.getElementById('playerCardUrlInput');
+    const url = urlInput.value.trim();
+
+    if (!url) {
+        removePhotoFromCard();
+        return;
+    }
+
+    // Reusing the core logic from the "Other" tab feature
+    if (!url.match(/\.(jpeg|jpg|gif|png|webp)$/i)) {
+            if (!confirm("The URL does not look like a standard image link. Use anyway?")) {
+                return;
+            }
+    }
+    
+    setGameAsModified();
+    customPlayerPhotos[currentPlayerCardId] = url;
+    logEvent(`Custom photo URL applied to ${createPlayerLink(currentPlayerCardId)} directly from dossier.`);
+    
+    document.getElementById('playerCardImg').src = url;
+    updateAllPlayerDivs();
+    
+    // Hide the input area after applying
+    document.getElementById('playerCardUrlInputArea').style.display = 'none';
+    document.getElementById('playerCardOpenUrlInputBtn').textContent = 'Edit Photo URL';
+}
+
+function removePhotoFromCard() {
+    if (!currentPlayerCardId) return;
+    if (isViewingArchivedGame) return;
+    
+    if (customPlayerPhotos[currentPlayerCardId]) {
+        setGameAsModified();
+        delete customPlayerPhotos[currentPlayerCardId];
+        logEvent(`Custom photo removed from ${createPlayerLink(currentPlayerCardId)} directly from dossier.`);
+        document.getElementById('playerCardImg').src = "https://i.imgur.com/AJ3InNO.png";
+        updateAllPlayerDivs();
+    }
+    
+    // Hide the input area after removal
+    document.getElementById('playerCardUrlInputArea').style.display = 'none';
+    document.getElementById('playerCardOpenUrlInputBtn').textContent = 'Edit Photo URL';
+}
+
+
+// --- NEW: FORCE WINNER LOGIC ---
+function toggleForceWinner(playerId) {
+    if (forcedWinnerId === playerId) {
+        // If they are already the forced winner, undo it.
+        forcedWinnerId = null;
+        logEvent(`P${formatPlayerNumber(playerId)} is no longer the forced winner.`);
+    } else {
+        // If another player is already the forced winner, block it.
+        if (forcedWinnerId !== null) {
+            alert(`P${formatPlayerNumber(forcedWinnerId)} is already the forced winner. You must undo them first.`);
+            return;
+        }
+        // Set the new forced winner.
+        forcedWinnerId = playerId;
+        logEvent(`P${formatPlayerNumber(playerId)} is now the FORCED WINNER. All RNG will now be in their favor.`);
+        setGameAsModified();
+    }
+    // Refresh the card to update the button's text and color.
+    showPlayerCard(playerId);
+}
+
+
+document.addEventListener("DOMContentLoaded", () => {
+    document.querySelector('.tab-buttons .tab-link').click();
+    document.getElementById('history-slider-container').style.display = 'none';
+    initializeAchievements();
+    populateEasterEggBox();
+    updateStatistics();
+    updateVipTab();
+    updateEventButtons();
+    populatePreviousWinnersDropdown();
+
+    const viewport = document.getElementById('grid-viewport');
+    let isPanning = false;
+    let startX, startY, scrollLeft, scrollTop;
+
+    viewport.addEventListener('mousedown', (e) => {
+        isPanning = true;
+        viewport.style.cursor = 'grabbing';
+        startX = e.pageX - viewport.offsetLeft;
+        startY = e.pageY - viewport.offsetTop;
+        scrollLeft = viewport.scrollLeft;
+        scrollTop = viewport.scrollTop;
+            e.preventDefault(); 
+    });
+
+    viewport.addEventListener('mouseleave', () => { isPanning = false; viewport.style.cursor = 'grab'; });
+    viewport.addEventListener('mouseup', () => { isPanning = false; viewport.style.cursor = 'grab'; });
+
+    viewport.addEventListener('mousemove', (e) => {
+        if (!isPanning) return;
+        e.preventDefault();
+        const x = e.pageX - viewport.offsetLeft;
+        const y = e.pageY - viewport.offsetTop;
+        viewport.scrollLeft = scrollLeft - (x - startX);
+        viewport.scrollTop = scrollTop - (y - startY);
+    });
+});
+
+// --- NEW: WIN CHANCE CALCULATOR FUNCTIONS ---
+
+function openWinChanceCalculator() {
+    const select = document.getElementById('winChanceGameSelect');
+    select.innerHTML = '';
+    const gameButtons = document.querySelectorAll('.game-presets-controls button');
+    gameButtons.forEach(button => {
+        const gameName = button.textContent.split('(')[0].trim();
+        // Avoid adding meta-actions to the list
+        if (!gameName.startsWith('Confirm') && !gameName.startsWith('Get') && !gameName.startsWith('Voted')) {
+            const option = document.createElement('option');
+            option.value = gameName;
+            option.textContent = gameName;
+            select.appendChild(option);
+        }
+    });
+    document.getElementById('winChanceModal').style.display = 'flex';
+}
+
+function addGameToPredictionList() {
+    const select = document.getElementById('winChanceGameSelect');
+    const gameName = select.value;
+    const container = document.getElementById('winChanceGameListContainer');
+    
+    const gameItem = document.createElement('div');
+    gameItem.className = 'prediction-game-item';
+    gameItem.dataset.gameName = gameName;
+    gameItem.innerHTML = `${gameName} <span class="remove-game" onclick="this.parentElement.remove()">×</span>`;
+    container.appendChild(gameItem);
+}
+
+function clearPredictionList() {
+    document.getElementById('winChanceGameListContainer').innerHTML = '';
+}
+
+
+function closeWinChanceCalculator() {
+    document.getElementById('winChanceModal').style.display = 'none';
+}
+
+function showTopContenders() {
+    const listEl = document.getElementById('topContendersList');
+    const activePlayers = getActivePlayers();
+    if (activePlayers.length === 0) {
+        listEl.innerHTML = 'No active players in the game.';
+        return;
+    }
+
+    let totalScore = 0;
+    const contenderScores = activePlayers.map(p => {
+        // Using 'Current' as the game context provides a good baseline score
+        const score = calculatePlayerSurvivalScore(p, 'Current', activePlayers.length);
+        totalScore += score;
+        return { player: p, score: score };
+    });
+
+    // Calculate percentage for each contender
+    contenderScores.forEach(c => {
+        c.winChance = totalScore > 0 ? (c.score / totalScore) * 100 : 0;
+    });
+
+    // Sort by win chance (descending) and take top 10
+    contenderScores.sort((a, b) => b.winChance - a.winChance);
+    const top10 = contenderScores.slice(0, 10);
+
+    let html = '<h4>Top 10 Most Likely to Win</h4>';
+    top10.forEach((contender, index) => {
+        html += `<div>${index + 1}. ${createPlayerLink(contender.player.id)} (${contender.player.name || 'Unnamed'}) - <b>${contender.winChance.toFixed(2)}%</b></div>`;
+    });
+
+    listEl.innerHTML = html;
+}
+
+
+function calculatePlayerSurvivalScore(player, gameName, playerCount) {
+    if (!player) return 0;
+    let score = 0;
+    const stats = player.baseStats;
+
+    // Base score from stats
+    score += (stats.strength + stats.agility + stats.intelligence + stats.charisma + stats.luck) * 2;
+    score -= stats.cowardice * 2.5;
+    score -= stats.greed * 1.5;
+
+    // Game-specific weighting
+    const game = gameName.toLowerCase();
+    if (game.includes('tug of war')) score += stats.strength * 15;
+    if (game.includes('dalgona')) score += (stats.agility * 5) + (stats.intelligence * 5);
+    if (game.includes('marbles')) score += (stats.intelligence * 10) + (stats.luck * 10);
+    if (game.includes('glass bridge')) score += stats.luck * 20;
+    if (game.includes('squid game')) score += (stats.strength * 10) + (stats.agility * 10);
+    if (game.includes('lights out')) score += (stats.strength * 8) - (stats.cowardice * 5);
+
+    // Social factors
+    score += (player.allies ? player.allies.length : 0) * 10;
+    score -= (player.enemies ? player.enemies.length : 0) * 8;
+
+    // Protection is a massive advantage
+    score += player.protection * 100;
+    if (player.hasHint) score += 80;
+
+    // Being the forced winner is an almost guaranteed win
+    if (forcedWinnerId === player.id) score += 10000;
+
+    return Math.max(1, score); // Ensure score is always positive
+}
+
+function calculateWinChance(isPrediction) {
+    const p1Id = parseInt(document.getElementById('winChancePlayerId').value);
+    const compareIdsRaw = document.getElementById('winChanceCompareIds').value;
+    
+    let allPlayerIds = [];
+    if (!isNaN(p1Id)) {
+        allPlayerIds.push(p1Id);
+    }
+
+    if (compareIdsRaw.trim() !== '') {
+        const compareIds = compareIdsRaw.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id) && id > 0);
+        allPlayerIds.push(...compareIds);
+    }
+    allPlayerIds = [...new Set(allPlayerIds)]; // Remove duplicates
+
+    if (allPlayerIds.length === 0 || !players.find(p => p.id === allPlayerIds[0])) {
+        alert("Please enter at least one valid Player ID.");
+        return;
+    }
+
+    let datasets = [];
+    let labels = [];
+
+    if (isPrediction) {
+        // --- PREDICTION LOGIC ---
+        const gameItems = document.querySelectorAll('#winChanceGameListContainer .prediction-game-item');
+        const gameList = Array.from(gameItems).map(item => item.dataset.gameName);
+        
+        if (gameList.length === 0) {
+            alert("Please add at least one future game to the list for prediction.");
+            return;
+        }
+        labels = ['Current', ...gameList];
+        
+        const runSimulation = (targetId) => {
+            let simPlayers = JSON.parse(JSON.stringify(players));
+            let winChances = [];
+
+            for (let i = 0; i <= gameList.length; i++) {
+                const currentGameName = (i === 0) ? 'Current' : gameList[i - 1];
+                let activeSimPlayers = simPlayers.filter(p => !p.eliminated);
+                if (activeSimPlayers.length === 0) {
+                    winChances.push(0);
+                    continue;
+                }
+
+                const targetPlayer = activeSimPlayers.find(p => p.id === targetId);
+                if (!targetPlayer) {
+                    winChances.push(0); // Player was eliminated in sim
+                    continue;
+                }
+
+                let totalScore = 0;
+                const scores = activeSimPlayers.map(p => {
+                    const score = calculatePlayerSurvivalScore(p, currentGameName, activeSimPlayers.length);
+                    totalScore += score;
+                    return { id: p.id, score: score };
+                });
+
+                const targetPlayerScore = scores.find(s => s.id === targetId).score;
+                const winChance = totalScore > 0 ? (targetPlayerScore / totalScore) * 100 : 0;
+                winChances.push(winChance);
+
+                // Simulate eliminations for the next step
+                if (i < gameList.length) {
+                    scores.sort((a, b) => a.score - b.score);
+                    const numToElim = Math.max(1, Math.floor(activeSimPlayers.length * 0.3)); // Assume ~30% elim rate
+                    for (let j = 0; j < numToElim && scores.length > 1; j++) {
+                        const eliminatedId = scores.shift().id;
+                        const p = simPlayers.find(pl => pl.id === eliminatedId);
+                        if (p) p.eliminated = true;
+                    }
+                }
+            }
+            return winChances;
+        };
+
+        allPlayerIds.forEach((id, index) => {
+            if (players.find(p => p.id === id)) {
+                datasets.push({
+                    label: `P${id} Win Chance`,
+                    data: runSimulation(id),
+                    borderColor: chartColors[index % chartColors.length],
+                    fill: false
+                });
+            }
+        });
+
+    } else {
+        // --- LIVE TRAJECTORY LOGIC ---
+        if (gameHistorySnapshots.length < 1) {
+            alert("No game history to analyze. Play at least one round.");
+            return;
+        }
+        labels = gameHistorySnapshots.map(s => `R${s.round}: ${s.name}`);
+        
+        const calculateHistory = (targetId) => {
+            return gameHistorySnapshots.map(snapshot => {
+                const historicPlayers = snapshot.players.filter(p => !p.eliminated && !p.votedOut);
+                const targetPlayer = historicPlayers.find(p => p.id === targetId);
+
+                if (!targetPlayer || historicPlayers.length === 0) return 0;
+
+                let totalScore = 0;
+                const scores = historicPlayers.map(p => {
+                    const score = calculatePlayerSurvivalScore(p, snapshot.name, historicPlayers.length);
+                    totalScore += score;
+                    return { id: p.id, score: score };
+                });
+
+                const targetPlayerScore = scores.find(s => s.id === targetId)?.score || 0;
+                return totalScore > 0 ? (targetPlayerScore / totalScore) * 100 : 0;
+            });
+        };
+
+        allPlayerIds.forEach((id, index) => {
+            if (players.find(p => p.id === id)) {
+                datasets.push({
+                    label: `P${id} Current Trajectory`,
+                    data: calculateHistory(id),
+                    borderColor: chartColors[index % chartColors.length],
+                    fill: false
+                });
+            }
+        });
+    }
+    drawWinChanceGraph(datasets, labels, 'Win');
+}
+
+
+function calculateSurvivalChance() {
+    const gameItems = document.querySelectorAll('#winChanceGameListContainer .prediction-game-item');
+    const gameList = Array.from(gameItems).map(item => item.dataset.gameName);
+    if (gameList.length === 0) {
+        alert("Please add at least one game to the list to calculate survival chances.");
+        return;
+    }
+
+    const p1Id = parseInt(document.getElementById('winChancePlayerId').value);
+    const compareIdsRaw = document.getElementById('winChanceCompareIds').value;
+    let allPlayerIds = [p1Id];
+    if (compareIdsRaw.trim() !== '') {
+        const compareIds = compareIdsRaw.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id) && id > 0);
+        allPlayerIds.push(...compareIds);
+    }
+    allPlayerIds = [...new Set(allPlayerIds)];
+
+    if (isNaN(p1Id) || !players.find(p => p.id === p1Id)) {
+        alert("Primary Player ID is invalid or not found.");
+        return;
+    }
+    
+    const activePlayers = getActivePlayers();
+    if (activePlayers.length === 0) return;
+
+    let datasets = [];
+    
+    allPlayerIds.forEach((id, index) => {
+        const player = players.find(p => p.id === id);
+        if (!player) return;
+
+        const survivalChances = gameList.map(gameName => {
+            let totalScore = 0;
+            // Calculate the score of every active player for this specific game
+            const scores = activePlayers.map(p => {
+                const score = calculatePlayerSurvivalScore(p, gameName, activePlayers.length);
+                totalScore += score;
+                return { id: p.id, score: score };
+            });
+            
+            const targetPlayerScore = scores.find(s => s.id === id)?.score || 0;
+            
+            // This is a simplified heuristic: Chance is proportional to their score vs the average.
+            // A more complex model could be used, but this gives a good relative measure.
+            const averageScore = totalScore / activePlayers.length;
+            let chance = 50 + ((targetPlayerScore - averageScore) / averageScore) * 25;
+            
+            return Math.max(0, Math.min(100, chance)); // Clamp between 0% and 100%
+        });
+
+        datasets.push({
+            label: `P${id} Survival %`,
+            data: survivalChances,
+            backgroundColor: chartColors[index % chartColors.length]
+        });
+    });
+    
+    drawWinChanceGraph(datasets, gameList, 'Survival');
+}
+
+function drawWinChanceGraph(datasets, labels, type = 'Win') {
+    const ctx = document.getElementById('winChanceCanvas').getContext('2d');
+    if (winChanceChart) {
+        winChanceChart.destroy();
+    }
+
+    let yAxisMax, chartType, titleText;
+
+    if (type === 'Survival') {
+        chartType = 'bar'; // This sets the graph to a BAR chart
+        titleText = 'Heuristic Per-Game Survival Chance';
+        yAxisMax = 100; // Survival is always a percentage from 0-100
+    } else { // 'Win'
+        chartType = 'line'; // This sets the graph to a LINE chart
+        titleText = 'Heuristic Win Chance Trajectory';
+        // --- DYNAMIC MAX CALCULATION ---
+        let maxVal = 0;
+        datasets.forEach(dataset => {
+            const maxInData = Math.max(...dataset.data);
+            if (maxInData > maxVal) {
+                maxVal = maxInData;
+            }
+        });
+        yAxisMax = Math.ceil(maxVal * 1.2) + 1; // Add 20% padding and round up + 1
+    }
+    
+    winChanceChart = new Chart(ctx, {
+        type: chartType,
+        data: {
+            labels: labels,
+            datasets: datasets
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: yAxisMax,
+                    ticks: {
+                        callback: function(value) {
+                            return value.toFixed(2) + '%'
+                        }
+                    }
+                }
+            },
+            plugins: {
+                title: {
+                    display: true,
+                    text: titleText
+                }
+            }
+        }
+    });
+}
+
+
