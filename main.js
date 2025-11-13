@@ -237,6 +237,63 @@ function startGame(isAdvanced) {
     document.getElementById('history-slider-container').style.display = 'block';
 }
 
+function playRound() {
+    const numEliminatedInput = document.getElementById('numEliminated');
+    const reasonInput = document.getElementById('roundDescription');
+    
+    if (!numEliminatedInput || !reasonInput) {
+        console.error("Required input elements not found for playRound.");
+        return;
+    }
+
+    const numToEliminate = parseInt(numEliminatedInput.value, 10);
+    const reason = reasonInput.value || "failed a generic challenge";
+
+    if (isNaN(numToEliminate) || numToEliminate < 0) {
+        alert("Please enter a valid number of players to eliminate.");
+        return;
+    }
+
+    const activePlayers = players.filter(p => p.status === 'active');
+
+    if (activePlayers.length === 0) {
+        alert("No active players left to eliminate.");
+        return;
+    }
+
+    gameState.round++;
+    const logEntry = document.createElement('li');
+
+    if (numToEliminate === 0) {
+        logEntry.innerHTML = `<b>Round ${gameState.round}:</b> No players were eliminated.`;
+        document.getElementById('gameLogList').prepend(logEntry);
+        return; // No UI update needed if no one is eliminated
+    }
+    
+    if (numToEliminate >= activePlayers.length) {
+        if (activePlayers.length > 1) {
+             alert(`This will eliminate all remaining players and may end the game.`);
+        }
+    }
+    
+    const playersToEliminate = activePlayers.sort(() => 0.5 - Math.random()).slice(0, numToEliminate);
+
+    playersToEliminate.forEach(player => {
+        player.status = 'eliminated';
+        eliminatedOrder.push({ id: player.id, reason: reason, round: gameState.round });
+    });
+
+    gameState.playersRemaining = players.filter(p => p.status === 'active').length;
+
+    // Log the event
+    let eliminatedIds = playersToEliminate.map(p => p.id).join(', ');
+    logEntry.innerHTML = `<b>Round ${gameState.round}:</b> ${playersToEliminate.length} players eliminated (${eliminatedIds}) because they ${reason}.`;
+    document.getElementById('gameLogList').prepend(logEntry);
+    
+    updateAllPlayerDivs();
+    updatePlayersRemaining();
+}
+
 // --- NEW: Initialize grid controls on load ---
 document.addEventListener('DOMContentLoaded', () => {
     setupGridInteraction();
