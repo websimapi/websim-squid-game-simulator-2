@@ -328,7 +328,6 @@ document.addEventListener('DOMContentLoaded', () => {
 // --- END NEW ---
 
 let playerGroupId = {};
-let players = [];
 let round = 0;
 let customPlayerPhotos = {};
 let forcedWinnerId = null;
@@ -4624,6 +4623,6 @@ function handleBathroomFight() {
         }
 
         let eliminatedThisEvent = [];
-        let details = "Events in the X vs O brawl:<br
+        let details = "Events in the X vs O brawl:<br";
 
 </update>
