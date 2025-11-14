@@ -345,20 +345,20 @@ let showGroups = false;
 let persistentGroupColors = {};
 let firstEliminationOfGame = false;
 
-// --- NEW Feature Variables ---
+// Feature Variables
 let favoritedPlayerIds = new Set();
 let eliminationOrder = [];
 let gameHistorySnapshots = [];
 let isViewingHistory = false;
 let livePlayersState = null;
-let usedEvents = new Set(); // To track used events per game
+let usedEvents = new Set();
 
-// --- NEW Archive Viewing Variables
+// Archive Viewing Variables
 let isViewingArchivedGame = false;
 let liveGameStateBackup = null;
 
 let gridPositions = {}; // Player ID -> {x, y} mapping
-let originalRosterSize = 0; // Tracks the initial starting count (e.g., 456)
+let originalRosterSize = 0;
 let isCompactedView = false;
 
 
